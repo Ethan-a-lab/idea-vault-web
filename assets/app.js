@@ -103,6 +103,8 @@
 
   var LS_CFG = 'iv:cfg';
   var LS_UI = 'iv:ui';
+  // 旧版（视频卡片那版）用的键名，升级时把配置搬过来，免得让人重填一次令牌
+  var LS_CFG_OLD = 'idea-vault-cfg-v1';
 
   function loadLocal() {
     try {
@@ -118,6 +120,24 @@
         if (u.side) S.side = u.side;
       }
     } catch (e) { }
+
+    // 从旧版搬家：只在没配置过的情况下搬，不覆盖用户后来改的
+    if (!S.cfg.token) {
+      try {
+        var old = JSON.parse(localStorage.getItem(LS_CFG_OLD) || '{}');
+        if (old && old.owner && old.repo && old.token) {
+          S.cfg.owner = old.owner;
+          S.cfg.repo = old.repo;
+          S.cfg.branch = old.branch || 'main';
+          // 旧版只读 videos 子目录；新版要读整个库，所以这里故意留空不继承
+          S.cfg.path = '';
+          S.cfg.token = old.token;
+          saveCfg();
+          return true;
+        }
+      } catch (e) { }
+    }
+    return false;
   }
 
   function saveCfg() {
@@ -1249,7 +1269,7 @@
   /* ========== 10. 启动 ========== */
 
   function boot() {
-    loadLocal();
+    var migrated = loadLocal();
     applyTheme();
     checkViewport();
     bind();
@@ -1268,6 +1288,9 @@
       readHash();
       sync(false).then(function () {
         if (readHash()) renderMain();
+        if (migrated) setTimeout(function () {
+          toast('已沿用之前填过的配置，不用重填令牌');
+        }, 600);
       });
     }
   }
