@@ -24,8 +24,16 @@ src = src.replace('src="assets/', 'src="../assets/')
 
 # 3) 在 app.js 之前把配置塞进 localStorage，省得每次手点
 demo_cfg = (
-    '<script>try{localStorage.setItem("iv:cfg",JSON.stringify('
+    '<script>try{'
+    'if(location.search.indexOf("legacy")>=0){'
+    # 模拟"从旧版升级"：只留旧键，不留新键，验证迁移逻辑
+    'localStorage.removeItem("iv:cfg");'
+    'localStorage.setItem("idea-vault-cfg-v1",JSON.stringify('
+    '{owner:"Ethan-a-lab",repo:"idea-vault",dir:"videos",branch:"main",token:"demo-token"}));'
+    '}else{'
+    'localStorage.setItem("iv:cfg",JSON.stringify('
     '{owner:"Ethan-a-lab",repo:"idea-vault",branch:"main",path:"",token:"demo-token"}));'
+    '}'
     'if(location.search.indexOf("light")>=0)localStorage.setItem("iv:ui",JSON.stringify({theme:"light"}));'
     'else localStorage.setItem("iv:ui",JSON.stringify({theme:"dark"}));'
     '}catch(e){}</script>\n'
