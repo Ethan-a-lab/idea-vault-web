@@ -86,6 +86,7 @@
     cfg: { owner: '', repo: '', branch: 'main', path: '', token: '' },
     theme: 'dark',
     hardBreak: true,
+    props: 'full',     // full | compact | hidden —— 笔记顶部的属性面板
     files: [],
     docs: {},          // path -> { raw, parsed, sha }
     backlinks: {},     // targetPath -> [{ from, ctx }]
@@ -116,6 +117,7 @@
       if (u) {
         if (u.theme) S.theme = u.theme;
         if (typeof u.hardBreak === 'boolean') S.hardBreak = u.hardBreak;
+        if (u.props) S.props = u.props;
         if (u.openDirs) S.openDirs = u.openDirs;
         if (u.side) S.side = u.side;
       }
@@ -146,7 +148,8 @@
   function saveUI() {
     try {
       localStorage.setItem(LS_UI, JSON.stringify({
-        theme: S.theme, hardBreak: S.hardBreak, openDirs: S.openDirs, side: S.side
+        theme: S.theme, hardBreak: S.hardBreak, props: S.props,
+        openDirs: S.openDirs, side: S.side
       }));
     } catch (e) { }
   }
@@ -511,19 +514,16 @@
 
     var html = '<div class="reader">';
 
-    // 属性面板
+    // 属性面板：完整 / 折叠一行 / 不显示
     var propKeys = Object.keys(fm).filter(function (k) {
       if (k === 'title') return false;
       var v = fm[k];
       return v !== '' && v !== null && !(Array.isArray(v) && !v.length);
     });
-    if (propKeys.length) {
-      html += '<div class="props">';
-      propKeys.forEach(function (k) {
-        html += '<div class="prop"><div class="prop-k">' + esc(labelOf(k)) + '</div>' +
-          '<div class="prop-v">' + renderPropVal(fm[k], k) + '</div></div>';
-      });
-      html += '</div>';
+    if (propKeys.length && S.props !== 'hidden') {
+      html += S.props === 'compact'
+        ? compactPropsHtml(propKeys, fm)
+        : fullPropsHtml(propKeys, fm);
     }
 
     html += '<h1 class="note-title">' + esc(p.title || path.replace(/\.md$/i, '')) + '</h1>';
@@ -560,6 +560,16 @@
       var t = esc(x.replace(/\.md$/i, ''));
       return i === parts.length - 1 ? '<b>' + t + '</b>' : t;
     }).join(' / ');
+
+    // 折叠状态下的属性条：点一下就地展开
+    var fold = body.querySelector('#propsFold');
+    if (fold) {
+      fold.onclick = function () {
+        var tmp = document.createElement('div');
+        tmp.innerHTML = fullPropsHtml(propKeys, fm);
+        fold.replaceWith(tmp.firstElementChild);
+      };
+    }
 
     // 后处理：给未解析的双链打标记
     body.querySelectorAll('.wikilink').forEach(function (a) {
@@ -610,6 +620,32 @@
       }).join('');
     }
     return esc(s);
+  }
+
+  // 完整的属性表格
+  function fullPropsHtml(keys, fm) {
+    var h = '<div class="props">';
+    keys.forEach(function (k) {
+      h += '<div class="prop"><div class="prop-k">' + esc(labelOf(k)) + '</div>' +
+        '<div class="prop-v">' + renderPropVal(fm[k], k) + '</div></div>';
+    });
+    return h + '</div>';
+  }
+
+  // 折叠成一行摘要，点一下展开成完整表格
+  function compactPropsHtml(keys, fm) {
+    var parts = [];
+    keys.slice(0, 3).forEach(function (k) {
+      var v = fm[k];
+      if (Array.isArray(v)) v = v.join('、');
+      var s = String(v).replace(/^https?:\/\//i, '');
+      if (s.length > 24) s = s.slice(0, 24) + '…';
+      parts.push(labelOf(k) + ' ' + s);
+    });
+    var more = keys.length > 3 ? ' 等 ' + keys.length + ' 项' : '';
+    return '<div class="props-fold" id="propsFold" title="点击展开全部属性">' +
+      '<span class="pf-txt">' + esc(parts.join(' · ') + more) + '</span>' +
+      '<span class="pf-more">展开</span></div>';
   }
 
   /* ---------- 编辑器 ---------- */
@@ -940,6 +976,9 @@
     document.querySelectorAll('#segBreak button').forEach(function (b) {
       b.classList.toggle('on', (b.dataset.break === '1') === S.hardBreak);
     });
+    document.querySelectorAll('#segProps button').forEach(function (b) {
+      b.classList.toggle('on', b.dataset.props === S.props);
+    });
     $('ovSettings').classList.add('open');
     setTimeout(function () { $('cfgOwner').focus(); }, 60);
   }
@@ -1166,6 +1205,17 @@
         document.querySelectorAll('#segBreak button').forEach(function (x) { x.classList.remove('on'); });
         b.classList.add('on');
         S.hardBreak = b.dataset.break === '1';
+      };
+    });
+
+    document.querySelectorAll('#segProps button').forEach(function (b) {
+      b.onclick = function () {
+        document.querySelectorAll('#segProps button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        S.props = b.dataset.props;
+        saveUI();
+        // 立即生效，关掉设置就能看到
+        if (S.view === 'note') renderMain();
       };
     });
 
