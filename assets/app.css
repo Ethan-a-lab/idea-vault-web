@@ -632,8 +632,39 @@ html[data-theme="light"] .overlay { background: rgba(0, 0, 0, .25); }
   .mobile-bar button.on { color: var(--accent); }
   .mobile-bar button svg { width: 19px; height: 19px; }
 
-  .overlay { padding-top: 8vh; }
-  .palette { max-height: 76vh; }
+  /* 弹窗：手机上不能再用 vh 大边距，否则面板会被浏览器工具栏顶出屏幕 */
+  .overlay { padding: 6vh 12px calc(12px + env(safe-area-inset-bottom)); }
+  .palette { max-height: 80vh; max-height: 80dvh; }
+
+  /* 设置面板改成贴底抽屉：底部按钮永远在可视区，内容在中间滚动 */
+  #ovSettings { padding: 0; align-items: flex-end; }
+  #ovSettings .settings {
+    width: 100%; max-width: 100%; min-width: 0;
+    /* 先给不认识 dvh 的老内核一个保守上限，再用 dvh 精确避开浏览器工具栏 */
+    max-height: calc(100vh - 96px);
+    max-height: 92dvh;
+    border-radius: 16px 16px 0 0; border-bottom: none;
+    overflow: hidden;
+  }
+  #ovSettings .settings-body {
+    flex: 1 1 auto; min-height: 0; min-width: 0;
+    padding: 16px 16px 18px;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  #ovSettings .settings-foot {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: var(--bg-2); flex-wrap: wrap; gap: 8px;
+  }
+  /* 报告信息独占一行，避免两个按钮被挤到屏幕外 */
+  #ovSettings .settings-foot .msg { flex: 1 1 100%; margin: 0; }
+
+  /* 手机上两列并排会撑破屏幕，一律改单列 */
+  #ovSettings .fld-row { flex-direction: column; gap: 0; }
+  #ovSettings .fld-row .fld { width: 100%; }
+
+  /* iOS 上输入框字号小于 16px 会触发页面自动放大，体验极差 */
+  .fld input[type=text], .fld input[type=password], .palette input { font-size: 16px; }
 }
 
 @media (max-width: 420px) {
