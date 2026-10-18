@@ -66,6 +66,15 @@ setTimeout(function(){
       wide.push(n.tagName+'.'+(n.className||n.id||'')+' right='+Math.round(rc.right)+' w='+Math.round(rc.width));
     }
   });
+  var ov=document.getElementById('ovSettings'), st=ov?ov.querySelector('.settings'):null;
+  if(st){
+    var r=st.getBoundingClientRect(), ro=ov.getBoundingClientRect();
+    out.push('overlay: w='+Math.round(ro.width)+' pad='+getComputedStyle(ov).padding);
+    out.push('settings: w='+Math.round(r.width)+' right='+Math.round(r.right)+' left='+Math.round(r.left));
+    out.push('settings computed: width='+getComputedStyle(st).width+' maxW='+getComputedStyle(st).maxWidth+' overflow='+getComputedStyle(st).overflow);
+    var fr=st.querySelector('.fld-row');
+    if(fr) out.push('fld-row: w='+Math.round(fr.getBoundingClientRect().width)+' dir='+getComputedStyle(fr).flexDirection);
+  }
   out.push('OVERFLOW['+wide.length+']: '+wide.slice(0,12).join(' | '));
   var pre=document.createElement('div'); pre.id='diagout'; pre.textContent=out.join('\\n');
   document.body.appendChild(pre);
