@@ -1,0 +1,862 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>灵感收藏夹</title>
+<style>
+  :root{
+    --bg:#FAFAF8; --card:#FFFFFF; --line:#E6E4DD; --line-strong:#D3D1C7;
+    --tx:#2C2C2A; --tx2:#5F5E5A; --tx3:#8B8A84;
+    --accent:#534AB7; --accent-bg:#EEEDFE; --accent-line:#AFA9EC;
+    --danger:#A32D2D; --danger-bg:#FCEBEB;
+    --ok:#0F6E56; --ok-bg:#E1F5EE;
+    --r:12px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--tx);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+    padding-bottom:calc(32px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:0 16px}
+
+  /* 顶栏 */
+  header{
+    position:sticky;top:0;z-index:20;background:rgba(250,250,248,.92);
+    backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line);
+    padding:calc(10px + env(safe-area-inset-top)) 0 10px;
+  }
+  .head-row{display:flex;align-items:center;gap:10px}
+  .brand{font-size:16px;font-weight:600;letter-spacing:.2px}
+  .brand small{display:block;font-size:11px;font-weight:400;color:var(--tx3);letter-spacing:0}
+  .head-actions{margin-left:auto;display:flex;gap:6px}
+  .icon-btn{
+    border:1px solid var(--line);background:var(--card);color:var(--tx2);
+    width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+    cursor:pointer;font-size:13px;padding:0;
+  }
+  .icon-btn:active{background:#F1EFE8}
+
+  /* 搜索 */
+  .search-row{margin-top:10px;display:flex;gap:8px}
+  .search-row input{
+    flex:1;min-width:0;border:1px solid var(--line);background:var(--card);
+    border-radius:9px;padding:9px 12px;font-size:14px;color:var(--tx);
+    font-family:inherit;outline:none;
+  }
+  .search-row input:focus{border-color:var(--accent-line)}
+
+  /* 标签条 */
+  .tagbar{display:flex;gap:6px;overflow-x:auto;padding:9px 0 2px;scrollbar-width:none}
+  .tagbar::-webkit-scrollbar{display:none}
+  .tag{
+    flex:0 0 auto;border:1px solid var(--line);background:var(--card);
+    border-radius:99px;padding:4px 11px;font-size:12px;color:var(--tx2);
+    cursor:pointer;white-space:nowrap;
+  }
+  .tag.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* 投递区 */
+  .composer{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    margin-top:14px;overflow:hidden;
+  }
+  .composer-head{
+    display:flex;align-items:center;gap:8px;padding:10px 14px;
+    border-bottom:1px solid var(--line);font-size:13px;color:var(--tx2);cursor:pointer;
+  }
+  .composer-head .caret{margin-left:auto;color:var(--tx3);font-size:11px;transition:transform .15s}
+  .composer.open .caret{transform:rotate(180deg)}
+  .composer-body{display:none;padding:12px 14px 14px}
+  .composer.open .composer-body{display:block}
+  .composer textarea, .composer input{
+    width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+    font-size:14px;font-family:inherit;color:var(--tx);background:var(--bg);
+    outline:none;resize:vertical;
+  }
+  .composer textarea{min-height:96px;line-height:1.55}
+  .composer textarea:focus,.composer input:focus{border-color:var(--accent-line);background:var(--card)}
+  .field{margin-bottom:10px}
+  .field label{display:block;font-size:12px;color:var(--tx2);margin-bottom:5px}
+  .btn{
+    border:none;border-radius:9px;padding:10px 18px;font-size:14px;font-weight:500;
+    font-family:inherit;cursor:pointer;background:var(--accent);color:#fff;
+  }
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.ghost{background:var(--card);color:var(--tx2);border:1px solid var(--line)}
+  .btn-row{display:flex;gap:8px;align-items:center;margin-top:4px}
+  .hint{font-size:12px;color:var(--tx3);margin-top:8px;line-height:1.5}
+
+  /* 卡片 */
+  .list{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    padding:14px;cursor:pointer;transition:border-color .15s;
+  }
+  .card:active{border-color:var(--line-strong)}
+  .card h3{margin:0 0 6px;font-size:15px;font-weight:600;line-height:1.45}
+  .take{
+    font-size:14px;color:var(--tx);background:var(--accent-bg);
+    border-left:2px solid var(--accent-line);padding:7px 10px;border-radius:0 7px 7px 0;
+    margin:8px 0;
+  }
+  .take.empty{background:#F1EFE8;border-left-color:var(--line-strong);color:var(--tx3);font-style:italic}
+  .meta{display:flex;flex-wrap:wrap;gap:5px 12px;font-size:12px;color:var(--tx3)}
+  .meta .dot{opacity:.4}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+  .chip{font-size:11px;color:var(--accent);background:var(--accent-bg);border-radius:99px;padding:2px 9px}
+
+  /* 详情 */
+  .sheet{
+    position:fixed;inset:0;z-index:60;background:var(--bg);display:none;
+    overflow-y:auto;padding:0 0 40px;
+  }
+  .sheet.open{display:block}
+  .sheet-top{
+    position:sticky;top:0;background:rgba(250,250,248,.95);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 0 10px;
+  }
+  .sheet-body{padding-top:16px}
+  .sheet h2{font-size:20px;line-height:1.4;margin:0 0 8px;font-weight:600}
+  .prose{font-size:15px;line-height:1.75;color:var(--tx);margin-top:18px}
+  .prose h4{font-size:13px;color:var(--tx2);margin:22px 0 8px;font-weight:500;letter-spacing:.3px}
+  .prose p{margin:0 0 12px}
+  .prose hr{border:none;border-top:1px solid var(--line);margin:18px 0}
+  .prose a{color:var(--accent)}
+
+  /* 状态 */
+  .empty-state{text-align:center;padding:56px 20px;color:var(--tx3)}
+  .empty-state .big{font-size:15px;color:var(--tx2);margin-bottom:6px}
+  .toast{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:calc(28px + env(safe-area-inset-bottom));
+    background:#2C2C2A;color:#fff;padding:11px 18px;border-radius:10px;font-size:13.5px;
+    z-index:90;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:88vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+  .toast.err{background:var(--danger)}
+  .toast.ok{background:#27500A}
+  .sync-bar{
+    display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx3);
+    padding:8px 2px 0;
+  }
+  .spinner{
+    width:13px;height:13px;border:1.5px solid var(--line-strong);border-top-color:var(--accent);
+    border-radius:50%;animation:spin .7s linear infinite;display:none;
+  }
+  .spinner.on{display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="head-row">
+      <div class="brand">灵感收藏夹<small id="repoLabel">正在连接…</small></div>
+      <div class="head-actions">
+        <button class="icon-btn" id="btnRefresh" title="刷新">↻</button>
+        <button class="icon-btn" id="btnSettings" title="设置">⚙</button>
+      </div>
+    </div>
+    <div class="search-row">
+      <input id="search" type="search" placeholder="搜索标题、正文、标签…" autocomplete="off">
+    </div>
+    <div class="tagbar" id="tagbar"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="composer" id="composer">
+    <div class="composer-head" id="composerHead">
+      <span>＋ 存一条灵感</span>
+      <span class="caret">▼</span>
+    </div>
+    <div class="composer-body">
+      <div class="field">
+        <label>粘贴内容（豆包输出的 Markdown，或只有一段文字/链接）</label>
+        <textarea id="inText" placeholder="把豆包生成的笔记整段粘进来，会自动识别标题、作者、标签、逐字稿…&#10;&#10;只粘一个链接也可以，先存下来，回头再补。"></textarea>
+      </div>
+      <div class="field">
+        <label>我为什么存它（一句话，最重要的一栏）</label>
+        <input id="inTake" type="text" placeholder="它说……这句话推翻了/印证了我之前的想法">
+      </div>
+      <div class="field">
+        <label>标签（用逗号分隔，可留空）</label>
+        <input id="inTags" type="text" placeholder="领域/职业, 主题/兴趣变现">
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="btnSave">存进收藏夹</button>
+        <button class="btn ghost" id="btnClear">清空</button>
+      </div>
+      <div class="hint" id="parseHint"></div>
+    </div>
+  </section>
+
+  <div class="sync-bar"><div class="spinner" id="spinner"></div><span id="statusText"></span></div>
+  <div class="list" id="list"></div>
+</main>
+
+<!-- 详情 -->
+<div class="sheet" id="sheet">
+  <div class="sheet-top">
+    <div class="wrap head-row">
+      <button class="icon-btn" id="sheetClose">←</button>
+      <div class="head-actions" style="margin-left:auto">
+        <button class="icon-btn" id="btnOpenSrc" title="打开原视频">↗</button>
+      </div>
+    </div>
+  </div>
+  <div class="wrap sheet-body" id="sheetBody"></div>
+</div>
+
+<!-- 设置 -->
+<div class="sheet" id="settings">
+  <div class="sheet-top">
+    <div class="wrap head-row">
+      <button class="icon-btn" id="setClose">←</button>
+      <div style="font-size:15px;font-weight:500">设置</div>
+    </div>
+  </div>
+  <div class="wrap sheet-body">
+    <div class="field">
+      <label>GitHub 用户名</label>
+      <input id="cfgOwner" placeholder="例如 Ethan-a-lab">
+    </div>
+    <div class="field">
+      <label>仓库名</label>
+      <input id="cfgRepo" placeholder="例如 idea-vault">
+    </div>
+    <div class="field">
+      <label>存放目录</label>
+      <input id="cfgDir" placeholder="videos">
+    </div>
+    <div class="field">
+      <label>分支</label>
+      <input id="cfgBranch" placeholder="main">
+    </div>
+    <div class="field">
+      <label>访问令牌（fine-grained token，仅授权此仓库 Contents 读写）</label>
+      <input id="cfgToken" type="password" placeholder="github_pat_... 或 ghp_...">
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="btnSaveCfg">保存</button>
+      <button class="btn ghost" id="btnTestCfg">测试连接</button>
+    </div>
+    <div class="hint">
+      令牌只存在这台设备的浏览器里，不会发往任何第三方。<br>
+      建令牌路径：GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens。<br>
+      权限只勾 <b>Contents: Read and write</b>，仓库只选这一个，有效期建议 90 天。
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ========== 配置 ========== */
+const LS_KEY = "idea-vault-cfg-v1";
+const CACHE_KEY = "idea-vault-cache-v1";
+const API = "https://api.github.com";
+
+let cfg = { owner:"", repo:"", dir:"videos", branch:"main", token:"" };
+let notes = [];          // 全部笔记
+let activeTag = "";      // 当前筛选标签
+let lastTreeSha = "";    // 用于判断是否需要重新拉取
+
+/* ========== 小工具 ========== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?"":s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+
+function toast(msg, type){
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (type ? " " + type : "");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>{ t.className = "toast"; }, 2600);
+}
+
+function todayStr(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+function setStatus(text, loading){
+  $("statusText").textContent = text || "";
+  $("spinner").className = "spinner" + (loading ? " on" : "");
+}
+
+/* ========== 配置读写 ========== */
+function loadCfg(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw) Object.assign(cfg, JSON.parse(raw));
+  }catch(e){}
+}
+function saveCfg(){
+  localStorage.setItem(LS_KEY, JSON.stringify(cfg));
+}
+function cfgReady(){
+  return cfg.owner && cfg.repo && cfg.token;
+}
+
+/* ========== GitHub API ========== */
+async function gh(path, opts){
+  opts = opts || {};
+  const headers = Object.assign({
+    "Authorization": "Bearer " + cfg.token,
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28"
+  }, opts.headers || {});
+  const res = await fetch(API + path, Object.assign({}, opts, { headers }));
+
+  /* allow404：调用方自己处理"找不到"，不当成错误抛出 */
+  if(res.status === 404 && opts.allow404) return null;
+
+  if(res.status === 401) throw new Error("令牌无效或已过期，请到设置里更新");
+  if(res.status === 403){
+    const remain = res.headers.get("x-ratelimit-remaining");
+    if(remain === "0") throw new Error("GitHub 接口调用超限，等一小时后再试");
+    throw new Error("没有权限（令牌可能没勾 Contents 读写）");
+  }
+  if(res.status === 404) throw new Error("仓库不存在，请检查用户名和仓库名");
+  if(res.status === 409) throw new Error("文件冲突，请刷新后重试");
+  if(res.status === 422) throw new Error("提交被拒绝，请检查分支名是否正确");
+  if(!res.ok){
+    let msg = "GitHub 返回 " + res.status;
+    try{ const j = await res.json(); if(j.message) msg += "：" + j.message; }catch(e){}
+    throw new Error(msg);
+  }
+  if(res.status === 204) return null;
+  return res.json();
+}
+
+/* 判断某个路径是否已存在，返回它的 sha 或 null */
+async function getFileSha(path){
+  const data = await gh(
+    `/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURI(path)}?ref=${encodeURIComponent(cfg.branch)}`,
+    { allow404: true }
+  );
+  return data && data.sha ? data.sha : null;
+}
+
+/* 写入一个文件 */
+async function putFile(path, content, message){
+  const body = {
+    message: message || ("add " + path),
+    content: b64EncodeUnicode(content),
+    branch: cfg.branch
+  };
+  const existingSha = await getFileSha(path);
+  if(existingSha) body.sha = existingSha;
+  return gh(`/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURI(path)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+}
+
+function b64EncodeUnicode(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin);
+}
+function b64DecodeUnicode(b64){
+  const bin = atob(String(b64).replace(/\s/g,""));
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
+/* ========== Markdown 解析 ========== */
+/* 极简 YAML frontmatter 解析：只支持 key: value 与 tags: [a, b] */
+function parseFrontmatter(text){
+  const m = String(text).match(/^\uFEFF?---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  if(!m) return { meta:{}, body: String(text) };
+  const meta = {};
+  m[1].split(/\r?\n/).forEach(line => {
+    const idx = line.indexOf(":");
+    if(idx < 0) return;
+    const k = line.slice(0, idx).trim();
+    let v = line.slice(idx + 1).trim();
+    if(!k) return;
+    if(v.startsWith("[") && v.endsWith("]")){
+      meta[k] = v.slice(1,-1).split(",").map(s => s.trim().replace(/^["']|["']$/g,"")).filter(Boolean);
+    }else{
+      v = v.replace(/^["']|["']$/g, "");
+      meta[k] = v;
+    }
+  });
+  return { meta, body: m[2] };
+}
+
+/* 需要引号包裹的 YAML 值 */
+function yamlValue(v){
+  v = String(v == null ? "" : v).trim();
+  if(v === "") return "";
+  if(/^[\[\]{}&*!|>%@`#,?:-]/.test(v) || v.indexOf(": ") >= 0 || v.indexOf("\n") >= 0){
+    return '"' + v.replace(/\\/g,"\\\\").replace(/"/g,'\\"') + '"';
+  }
+  return v;
+}
+
+/* 生成 Markdown 文件内容 */
+function buildMarkdown(meta, body){
+  const lines = ["---"];
+  lines.push("title: " + yamlValue(meta.title || "未命名"));
+  if(meta.author) lines.push("author: " + yamlValue(meta.author));
+  if(meta.url)    lines.push("url: " + yamlValue(meta.url));
+  lines.push("platform: " + yamlValue(meta.platform || "抖音"));
+  if(meta.duration) lines.push("duration: " + yamlValue(meta.duration));
+  lines.push("saved: " + (meta.saved || todayStr()));
+  const tags = Array.isArray(meta.tags) ? meta.tags.filter(Boolean) : [];
+  lines.push("tags: [" + tags.join(", ") + "]");
+  lines.push("status: " + (meta.status || "待回看"));
+  lines.push("my_take: " + yamlValue(meta.my_take || ""));
+  lines.push("---");
+  lines.push("");
+  lines.push((body || "").trim());
+  lines.push("");
+  return lines.join("\n");
+}
+
+/* 从任意粘贴内容里抽取可用字段 */
+function extractFromPaste(raw){
+  const text = String(raw || "").trim();
+  const out = { meta:{}, body:text };
+
+  const fm = parseFrontmatter(text);
+  if(Object.keys(fm.meta).length){
+    out.meta = Object.assign({}, fm.meta);
+    out.body = fm.body;
+  }
+
+  /* 抽链接 */
+  const urlMatch = text.match(/https?:\/\/(?:v\.douyin\.com|www\.douyin\.com|www\.iesdouyin\.com|iesdouyin\.com)\/[^\s"'<>）)]+/);
+  if(urlMatch) out.meta.url = out.meta.url || urlMatch[0];
+
+  /* 标题兜底：取正文里第一个 markdown 标题 */
+  if(!out.meta.title){
+    const h = out.body.match(/^#{1,3}\s+(.+)$/m);
+    if(h) out.meta.title = h[1].trim();
+  }
+  /* 再兜底：取第一行非空文本前 40 字 */
+  if(!out.meta.title){
+    const firstLine = out.body.split(/\r?\n/).find(l => l.trim());
+    out.meta.title = firstLine ? firstLine.trim().slice(0,40) : ("未命名 " + todayStr());
+  }
+  /* 兜底链接当标题时，避免标题就是一个 URL */
+  if(/^https?:\/\//.test(out.meta.title)){
+    out.meta.title = "待补充标题 " + todayStr();
+  }
+
+  /* 若正文只有链接，正文留空提示 */
+  if(out.body.trim() === (out.meta.url || "")){
+    out.body = "_（只存了链接，内容和感悟待补充）_";
+  }
+
+  return out;
+}
+
+/* ========== 拉取笔记 ========== */
+async function loadNotes(force){
+  if(!cfgReady()){ renderList(); return; }
+  setStatus("正在同步…", true);
+  try{
+    /* 1. 取目录树，判断有没有变化 */
+    const tree = await gh(`/repos/${cfg.owner}/${cfg.repo}/git/trees/${encodeURIComponent(cfg.branch)}?recursive=1`);
+    if(tree.truncated) console.warn("仓库文件过多，树被截断");
+    const prefix = cfg.dir.replace(/\/+$/,"") + "/";
+    const files = (tree.tree || []).filter(
+      n => n.type === "blob" && n.path.startsWith(prefix) && /\.md$/i.test(n.path)
+    );
+
+    if(!force && lastTreeSha && lastTreeSha === tree.sha){
+      const cached = readCache();
+      if(cached && cached.length === notes.length){
+        setStatus("已是最新 · " + notes.length + " 条", false);
+        return;
+      }
+    }
+
+    /* 2. 并发读取内容（限制并发 5，避免被限流） */
+    const results = [];
+    const queue = files.slice();
+    const worker = async () => {
+      while(queue.length){
+        const f = queue.shift();
+        try{
+          const data = await gh(`/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURI(f.path)}?ref=${encodeURIComponent(cfg.branch)}`);
+          const text = b64DecodeUnicode(data.content || "");
+          results.push(parseNote(f.path, text, f.sha));
+        }catch(e){
+          console.warn("读取失败", f.path, e.message);
+        }
+      }
+    };
+    await Promise.all([worker(), worker(), worker(), worker(), worker()]);
+
+    notes = results.sort((a,b) => (b.saved || "").localeCompare(a.saved || "") || (b.mtime||0)-(a.mtime||0));
+    lastTreeSha = tree.sha;
+    writeCache(notes);
+    renderTags();
+    renderList();
+    setStatus("已同步 · " + notes.length + " 条", false);
+  }catch(e){
+    setStatus("");
+    toast(e.message, "err");
+    renderList();
+  }
+}
+
+function parseNote(path, text, sha){
+  const { meta, body } = parseFrontmatter(text);
+  return {
+    path,
+    sha,
+    title: meta.title || path.split("/").pop().replace(/\.md$/i,""),
+    author: meta.author || "",
+    url: meta.url || "",
+    platform: meta.platform || "",
+    duration: meta.duration || "",
+    saved: meta.saved || "",
+    status: meta.status || "待回看",
+    tags: Array.isArray(meta.tags) ? meta.tags : (meta.tags ? [meta.tags] : []),
+    myTake: meta.my_take || "",
+    body,
+    plain: (body || "").replace(/[#>*_`\-\[\]()]/g, " ")
+  };
+}
+
+/* 缓存，避免每次打开都全量拉 */
+function writeCache(list){
+  try{
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), tree: lastTreeSha, list }));
+  }catch(e){}
+}
+function readCache(){
+  try{
+    const raw = localStorage.getItem(CACHE_KEY);
+    if(!raw) return null;
+    const o = JSON.parse(raw);
+    if(o && Array.isArray(o.list) && o.list.length){
+      lastTreeSha = o.tree || "";
+      notes = o.list;
+      return o.list;
+    }
+  }catch(e){}
+  return null;
+}
+
+/* ========== 渲染 ========== */
+function renderTags(){
+  const counts = {};
+  notes.forEach(n => n.tags.forEach(t => { counts[t] = (counts[t]||0) + 1; }));
+  const tags = Object.keys(counts).sort((a,b) => counts[b]-counts[a]);
+  const bar = $("tagbar");
+  if(!tags.length){ bar.innerHTML = ""; return; }
+  bar.innerHTML = `<div class="tag${activeTag?"":" on"}" data-tag="">全部 ${notes.length}</div>` +
+    tags.map(t => `<div class="tag${activeTag===t?" on":""}" data-tag="${esc(t)}">${esc(t)} ${counts[t]}</div>`).join("");
+  bar.querySelectorAll(".tag").forEach(el => {
+    el.onclick = () => { activeTag = el.dataset.tag; renderTags(); renderList(); };
+  });
+}
+
+function filtered(){
+  const q = $("search").value.trim().toLowerCase();
+  return notes.filter(n => {
+    if(activeTag && !n.tags.includes(activeTag)) return false;
+    if(!q) return true;
+    const hay = (n.title + " " + n.author + " " + n.myTake + " " + n.tags.join(" ") + " " + n.plain).toLowerCase();
+    return hay.indexOf(q) >= 0;
+  });
+}
+
+function renderList(){
+  const list = $("list");
+  const items = filtered();
+
+  if(!cfgReady()){
+    list.innerHTML = `<div class="empty-state">
+      <div class="big">还没连接仓库</div>
+      点右上角 ⚙ 填入 GitHub 用户名、仓库名和令牌<br>数据会存成纯文本文件，永远属于你
+    </div>`;
+    return;
+  }
+  if(!items.length){
+    list.innerHTML = `<div class="empty-state">
+      <div class="big">${notes.length ? "没有匹配的笔记" : "收藏夹还是空的"}</div>
+      ${notes.length ? "换个关键词或标签试试" : "点上面「＋ 存一条灵感」开始"}
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = items.map((n, i) => `
+    <article class="card" data-i="${i}">
+      <h3>${esc(n.title)}</h3>
+      ${n.myTake
+        ? `<div class="take">${esc(n.myTake)}</div>`
+        : `<div class="take empty">还没写「我为什么存它」</div>`}
+      <div class="meta">
+        ${n.author ? `<span>${esc(n.author)}</span>` : ""}
+        ${n.saved ? `<span class="dot">·</span><span>${esc(n.saved)}</span>` : ""}
+        ${n.duration ? `<span class="dot">·</span><span>${esc(n.duration)}</span>` : ""}
+        ${n.status && n.status !== "待回看" ? `<span class="dot">·</span><span>${esc(n.status)}</span>` : ""}
+      </div>
+      ${n.tags.length ? `<div class="chips">${n.tags.map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div>` : ""}
+    </article>
+  `).join("");
+
+  list.querySelectorAll(".card").forEach(el => {
+    el.onclick = () => openSheet(items[Number(el.dataset.i)]);
+  });
+}
+
+/* ========== 详情 ========== */
+let currentNote = null;
+function openSheet(n){
+  if(!n) return;
+  currentNote = n;
+  $("sheetBody").innerHTML = `
+    <h2>${esc(n.title)}</h2>
+    <div class="meta">
+      ${n.author ? `<span>${esc(n.author)}</span>` : ""}
+      ${n.saved ? `<span class="dot">·</span><span>${esc(n.saved)}</span>` : ""}
+      ${n.duration ? `<span class="dot">·</span><span>${esc(n.duration)}</span>` : ""}
+      ${n.platform ? `<span class="dot">·</span><span>${esc(n.platform)}</span>` : ""}
+    </div>
+    ${n.myTake ? `<div class="take" style="margin-top:14px">${esc(n.myTake)}</div>` : ""}
+    ${n.tags.length ? `<div class="chips" style="margin-top:12px">${n.tags.map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div>` : ""}
+    <div class="prose">${renderMarkdownLite(n.body)}</div>
+  `;
+  $("sheet").classList.add("open");
+  $("sheet").scrollTop = 0;
+  document.body.style.overflow = "hidden";
+}
+
+/* 极简 markdown 渲染（够用即可，不做全量解析） */
+function renderMarkdownLite(md){
+  let h = esc(md || "");
+  h = h.replace(/^###\s+(.+)$/gm, "<h4>$1</h4>");
+  h = h.replace(/^##\s+(.+)$/gm, "<h4>$1</h4>");
+  h = h.replace(/^#\s+(.+)$/gm, "<h4>$1</h4>");
+  h = h.replace(/^---$/gm, "<hr>");
+  h = h.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  h = h.replace(/\n{2,}/g, "</p><p>");
+  return "<p>" + h + "</p>";
+}
+
+function closeSheet(){
+  $("sheet").classList.remove("open");
+  document.body.style.overflow = "";
+  currentNote = null;
+}
+
+/* ========== 保存一条 ========== */
+async function saveNote(){
+  if(!cfgReady()){ toast("先去设置里连接仓库", "err"); $("settings").classList.add("open"); return; }
+
+  const raw = $("inText").value.trim();
+  const take = $("inTake").value.trim();
+  const tagInput = $("inTags").value.trim();
+
+  if(!raw && !take){ toast("至少粘贴点内容或写一句话"); return; }
+
+  const btn = $("btnSave");
+  btn.disabled = true;
+  btn.textContent = "保存中…";
+
+  try{
+    const parsed = extractFromPaste(raw);
+    const meta = Object.assign({}, parsed.meta);
+    meta.saved = todayStr();
+    if(take) meta.my_take = take;
+    meta.status = "待回看";
+
+    /* 合并标签：输入框 > frontmatter > 自动推断 */
+    let tags = [];
+    if(tagInput){
+      tags = tagInput.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+    }else if(Array.isArray(meta.tags)){
+      tags = meta.tags.slice();
+    }
+    if(!tags.length){
+      tags = inferTags(meta.title + " " + parsed.body);
+    }
+    meta.tags = tags;
+
+    /* 文件名：日期 + 标题去特殊字符 */
+    const safeTitle = String(meta.title)
+      .replace(/[\\/:*?"<>|#\[\]\n\r\t]/g,"")
+      .replace(/\s+/g," ")
+      .trim()
+      .slice(0,40) || "未命名";
+    let fileName = `${meta.saved}-${safeTitle}.md`;
+    const base = cfg.dir.replace(/\/+$/,"") + "/";
+
+    /* 重名则加序号 */
+    let path = base + fileName;
+    let n = 2;
+    while(await getFileSha(path)){
+      path = base + `${meta.saved}-${safeTitle} (${n}).md`;
+      n++;
+    }
+
+    const content = buildMarkdown(meta, parsed.body);
+    await putFile(path, content, "add: " + meta.title);
+
+    toast("已存入 · " + meta.title, "ok");
+    $("inText").value = ""; $("inTake").value = ""; $("inTags").value = "";
+    $("parseHint").textContent = "";
+    await loadNotes(true);
+  }catch(e){
+    toast(e.message, "err");
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "存进收藏夹";
+  }
+}
+
+/* 关键词兜底打标签 */
+const TAG_HINTS = {
+  "成长": ["成长","自律","习惯","坚持","复利","改变"],
+  "认知": ["认知","思维","本质","逻辑","底层","洞察"],
+  "职业": ["职场","工作","职业","面试","简历","升职","老板"],
+  "赚钱": ["赚钱","变现","副业","收入","商业","生意","客户"],
+  "学习方法": ["学习","记忆","读书","笔记","知识","复盘"],
+  "效率工具": ["工具","效率","自动化","AI","软件","插件"],
+  "心理": ["焦虑","情绪","内耗","关系","孤独","意义"],
+  "健康": ["睡眠","运动","健康","身体","精力"]
+};
+function inferTags(text){
+  const hits = [];
+  for(const tag in TAG_HINTS){
+    if(TAG_HINTS[tag].some(k => text.indexOf(k) >= 0)) hits.push(tag);
+    if(hits.length >= 3) break;
+  }
+  return hits;
+}
+
+/* ========== 设置 ========== */
+function openSettings(){
+  $("cfgOwner").value = cfg.owner || "";
+  $("cfgRepo").value = cfg.repo || "";
+  $("cfgDir").value = cfg.dir || "videos";
+  $("cfgBranch").value = cfg.branch || "main";
+  $("cfgToken").value = cfg.token || "";
+  $("settings").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeSettings(){
+  $("settings").classList.remove("open");
+  document.body.style.overflow = "";
+}
+async function saveSettings(){
+  cfg.owner  = $("cfgOwner").value.trim();
+  cfg.repo   = $("cfgRepo").value.trim();
+  cfg.dir    = $("cfgDir").value.trim() || "videos";
+  cfg.branch = $("cfgBranch").value.trim() || "main";
+  cfg.token  = $("cfgToken").value.trim();
+  if(!cfgReady()){ toast("三项都要填"); return; }
+  saveCfg();
+  closeSettings();
+  updateRepoLabel();
+  lastTreeSha = "";
+  localStorage.removeItem(CACHE_KEY);
+  notes = [];
+  await loadNotes(true);
+}
+async function testConnection(){
+  const tmp = Object.assign({}, cfg, {
+    owner: $("cfgOwner").value.trim(),
+    repo: $("cfgRepo").value.trim(),
+    token: $("cfgToken").value.trim()
+  });
+  if(!tmp.owner || !tmp.repo || !tmp.token){ toast("先填完整"); return; }
+  const saved = cfg; cfg = tmp;
+  try{
+    const r = await gh(`/repos/${cfg.owner}/${cfg.repo}`);
+    toast("连接成功：" + r.full_name + (r.private ? "（私有）" : "（公开）"), "ok");
+  }catch(e){
+    toast(e.message, "err");
+  }finally{
+    cfg = saved;
+  }
+}
+
+function updateRepoLabel(){
+  $("repoLabel").textContent = cfgReady()
+    ? `${cfg.owner}/${cfg.repo}`
+    : "未连接仓库 · 点右上角设置";
+}
+
+/* ========== 事件绑定 ========== */
+$("composerHead").onclick = () => $("composer").classList.toggle("open");
+$("btnSave").onclick = saveNote;
+$("btnClear").onclick = () => {
+  $("inText").value = ""; $("inTake").value = ""; $("inTags").value = ""; $("parseHint").textContent = "";
+};
+$("search").oninput = () => renderList();
+$("btnRefresh").onclick = () => loadNotes(true);
+$("btnSettings").onclick = openSettings;
+$("sheetClose").onclick = closeSheet;
+$("setClose").onclick = closeSettings;
+$("btnSaveCfg").onclick = saveSettings;
+$("btnTestCfg").onclick = testConnection;
+$("btnOpenSrc").onclick = () => {
+  if(currentNote && currentNote.url) window.open(currentNote.url, "_blank", "noopener");
+  else toast("这条没有存链接");
+};
+
+/* 粘贴时即时解析提示 */
+$("inText").oninput = () => {
+  const raw = $("inText").value.trim();
+  if(raw.length < 8){ $("parseHint").textContent = ""; return; }
+  const p = extractFromPaste(raw);
+  const bits = [];
+  if(p.meta.title) bits.push("标题：" + p.meta.title);
+  if(p.meta.author) bits.push("作者：" + p.meta.author);
+  if(p.meta.url) bits.push("链接：已识别");
+  if(Array.isArray(p.meta.tags) && p.meta.tags.length) bits.push("标签：" + p.meta.tags.join("/"));
+  bits.push("正文 " + (p.body ? p.body.length : 0) + " 字");
+  $("parseHint").textContent = "识别到 · " + bits.join(" · ");
+};
+
+/* 支持从分享菜单带入：?add=内容 */
+(function initFromQuery(){
+  const params = new URLSearchParams(location.search);
+  const add = params.get("add") || params.get("text") || params.get("url");
+  if(add){
+    $("inText").value = add;
+    $("composer").classList.add("open");
+    setTimeout(() => $("inTake").focus(), 300);
+    history.replaceState(null, "", location.pathname);
+  }
+})();
+
+/* ========== 启动 ========== */
+(async function boot(){
+  loadCfg();
+  updateRepoLabel();
+  const cached = readCache();
+  if(cached){
+    renderTags();
+    renderList();
+    setStatus("显示缓存 · " + notes.length + " 条", false);
+  }else{
+    renderList();
+  }
+  if(cfgReady()) await loadNotes(false);
+})();
+</script>
+</body>
+</html>
