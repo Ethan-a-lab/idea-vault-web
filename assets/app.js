@@ -87,6 +87,7 @@
     theme: 'dark',
     hardBreak: true,
     props: 'full',     // full | compact | hidden —— 笔记顶部的属性面板
+    readonly: false,   // 只读模式：隐藏网页端的编辑/新建/保存入口
     files: [],
     docs: {},          // path -> { raw, parsed, sha }
     backlinks: {},     // targetPath -> [{ from, ctx }]
@@ -118,6 +119,7 @@
         if (u.theme) S.theme = u.theme;
         if (typeof u.hardBreak === 'boolean') S.hardBreak = u.hardBreak;
         if (u.props) S.props = u.props;
+        if (typeof u.readonly === 'boolean') S.readonly = u.readonly;
         if (u.openDirs) S.openDirs = u.openDirs;
         if (u.side) S.side = u.side;
       }
@@ -149,6 +151,7 @@
     try {
       localStorage.setItem(LS_UI, JSON.stringify({
         theme: S.theme, hardBreak: S.hardBreak, props: S.props,
+        readonly: S.readonly,
         openDirs: S.openDirs, side: S.side
       }));
     } catch (e) { }
@@ -158,6 +161,17 @@
     document.documentElement.setAttribute('data-theme', S.theme);
     var meta = document.querySelector('meta[name=theme-color]');
     if (meta) meta.setAttribute('content', S.theme === 'dark' ? '#1e1e1e' : '#ffffff');
+  }
+
+  // 只读模式：藏起网页端的写入入口（写入仍可用 Obsidian）
+  function applyReadonly() {
+    var ro = S.readonly;
+    var nb = $('btnNew');
+    if (nb) nb.style.display = ro ? 'none' : '';
+    var me = document.querySelector('#modeSwitch [data-mode="edit"]');
+    if (me) me.style.display = ro ? 'none' : '';
+    var mbe = document.querySelector('#mobileBar [data-act="edit"]');
+    if (mbe) mbe.style.display = ro ? 'none' : '';
   }
 
   /* ========== 2. 同步 ========== */
@@ -420,6 +434,9 @@
     var body = $('mainBody');
     if (!body) return;
 
+    // 只读模式下永远不进编辑态
+    if (S.readonly && S.mode === 'edit') S.mode = 'read';
+
     // 顶栏面包屑 + 模式按钮
     document.querySelectorAll('#modeSwitch button').forEach(function (b) {
       b.classList.toggle('on', b.dataset.mode === S.mode);
@@ -670,8 +687,162 @@
     var ta = $('edArea');
     ta.value = raw;
 
-    // Tab 插入两个空格，比跳焦点更符合写笔记的预期
+    /* ---------- [[ 双链自动补全 ---------- */
+    var ac = { open: false, items: [], idx: 0, start: 0, query: '' };
+
+    // 清掉上一次编辑残留的弹层
+    document.querySelectorAll('.ac-pop').forEach(function (n) { n.remove(); });
+    var acPop = document.createElement('div');
+    acPop.className = 'ac-pop';
+    acPop.hidden = true;
+    document.body.appendChild(acPop);
+
+    // 候选池：每个 .md 一条，显示标题，插入文件名
+    var AC_ALL = (S.files || []).filter(function (f) {
+      return /\.md$/i.test(f.name || '');
+    }).map(function (f) {
+      var name = String(f.name).replace(/\.md$/i, '');
+      var d = S.docs[f.path];
+      var title = (d && d.parsed && d.parsed.title || '').trim();
+      return { label: title || name, insert: name, hint: f.dir || '' };
+    });
+
+    function acDetect() {
+      var caret = ta.selectionStart;
+      var before = ta.value.slice(Math.max(0, caret - 80), caret);
+      var m = before.match(/(^|[^\[])(\[\[)([^\[\]\n]*)$/);
+      if (!m) return null;
+      return { query: m[3], start: caret - m[3].length - 2 };
+    }
+
+    // 用镜像元素算光标像素位置（textarea 没有原生 API）
+    function caretPoint(el) {
+      try {
+        var cs = getComputedStyle(el);
+        var m = document.createElement('div');
+        var props = ['boxSizing', 'width', 'borderTopWidth', 'borderRightWidth',
+          'borderBottomWidth', 'borderLeftWidth', 'paddingTop', 'paddingRight',
+          'paddingBottom', 'paddingLeft', 'fontStyle', 'fontVariant', 'fontWeight',
+          'fontStretch', 'fontSize', 'lineHeight', 'fontFamily', 'textAlign',
+          'textTransform', 'textIndent', 'textDecoration', 'letterSpacing',
+          'wordSpacing', 'tabSize'];
+        for (var i = 0; i < props.length; i++) m.style[props[i]] = cs[props[i]];
+        m.style.position = 'absolute';
+        m.style.visibility = 'hidden';
+        m.style.top = '0';
+        m.style.left = '-9999px';
+        m.style.whiteSpace = 'pre-wrap';
+        m.style.wordWrap = 'break-word';
+        m.style.overflow = 'hidden';
+        m.textContent = el.value.slice(0, el.selectionStart);
+        var span = document.createElement('span');
+        span.textContent = el.value.slice(el.selectionStart) || '.';
+        m.appendChild(span);
+        document.body.appendChild(m);
+        var rect = el.getBoundingClientRect();
+        var lineH = parseInt(cs.lineHeight, 10) || 20;
+        var out = {
+          left: rect.left + span.offsetLeft - el.scrollLeft,
+          top: rect.top + span.offsetTop - el.scrollTop + lineH + 4,
+          lineH: lineH
+        };
+        document.body.removeChild(m);
+        return out;
+      } catch (e) { return null; }
+    }
+
+    function acPlace() {
+      var r = acPop.getBoundingClientRect();
+      var w = r.width || 280, h = r.height || 160;
+      var p = caretPoint(ta), left, top;
+      if (p) {
+        left = p.left;
+        top = p.top;
+        // 下方放不下就翻到光标上方
+        if (top + h > window.innerHeight - 8) top = p.top - h - p.lineH - 10;
+      } else {
+        var tr = ta.getBoundingClientRect();
+        left = tr.left + 16;
+        top = tr.top + 44;
+      }
+      left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+      top = Math.max(8, Math.min(top, window.innerHeight - h - 8));
+      acPop.style.left = left + 'px';
+      acPop.style.top = top + 'px';
+    }
+
+    function acRender() {
+      if (!ac.open) { acPop.hidden = true; return; }
+      acPop.innerHTML = ac.items.length
+        ? ac.items.map(function (it, i) {
+            return '<div class="ac-item' + (i === ac.idx ? ' on' : '') + '" data-ai="' + i + '">' +
+              '<span class="ac-t">' + esc(it.label) + '</span>' +
+              (it.hint ? '<span class="ac-d">' + esc(it.hint) + '</span>' : '') +
+              '</div>';
+          }).join('')
+        : '<div class="ac-empty">没有匹配的笔记，直接输入文件名也能连</div>';
+      acPop.hidden = false;
+      acPlace();
+      var on = acPop.querySelector('.ac-item.on');
+      if (on) on.scrollIntoView({ block: 'nearest' });
+    }
+
+    function acClose() {
+      ac.open = false;
+      acPop.hidden = true;
+    }
+
+    function acRefresh() {
+      var hit = acDetect();
+      if (!hit) { acClose(); return; }
+      var q = hit.query;
+      var scored = AC_ALL.map(function (it) {
+        var sc = fuzzyScore(q, it.label);
+        if (!sc) sc = fuzzyScore(q, it.insert) * 0.7;
+        return { it: it, sc: sc };
+      }).filter(function (x) { return x.sc > 0 || !q; });
+      scored.sort(function (a, b) { return b.sc - a.sc; });
+      ac.items = scored.slice(0, 6).map(function (x) { return x.it; });
+      ac.idx = 0;
+      ac.start = hit.start;
+      ac.query = q;
+      ac.open = true;
+      acRender();
+    }
+
+    function acAccept() {
+      var it = ac.items[ac.idx];
+      if (!it) { acClose(); return; }
+      var caret = ta.selectionStart;
+      var insert = '[[' + it.insert + ']]';
+      ta.value = ta.value.slice(0, ac.start) + insert + ta.value.slice(caret);
+      var pos = ac.start + insert.length;
+      ta.selectionStart = ta.selectionEnd = pos;
+      acClose();
+      ta.focus();
+    }
+
+    ta.addEventListener('input', acRefresh);
+    ta.addEventListener('click', function () { setTimeout(acRefresh, 0); });
+    ta.addEventListener('blur', function () { setTimeout(acClose, 150); });
+    acPop.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    acPop.addEventListener('click', function (e) {
+      var it = e.target.closest('[data-ai]');
+      if (!it) return;
+      e.preventDefault();
+      ac.idx = +it.dataset.ai;
+      acAccept();
+    });
+
+    // Tab 插入两个空格；弹层打开时接管方向键 / 回车 / Tab / Esc
     ta.addEventListener('keydown', function (e) {
+      if (ac.open) {
+        var n = Math.max(1, ac.items.length);
+        if (e.key === 'ArrowDown') { e.preventDefault(); ac.idx = (ac.idx + 1) % n; acRender(); return; }
+        if (e.key === 'ArrowUp') { e.preventDefault(); ac.idx = (ac.idx - 1 + n) % n; acRender(); return; }
+        if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); acAccept(); return; }
+        if (e.key === 'Escape') { e.preventDefault(); acClose(); return; }
+      }
       if (e.key === 'Tab') {
         e.preventDefault();
         var s = ta.selectionStart, t = ta.selectionEnd;
@@ -908,6 +1079,7 @@
 
     if (!onlyNotes) {
       COMMANDS.forEach(function (c) {
+        if (S.readonly && (c.id === 'new' || c.id === 'edit')) return;
         var sc = fuzzyScore(qq, c.title);
         if (sc > 0) items.push({ type: 'cmd', title: c.title, hint: c.hint || '', score: sc + 50, run: c.run });
       });
@@ -979,6 +1151,9 @@
     document.querySelectorAll('#segProps button').forEach(function (b) {
       b.classList.toggle('on', b.dataset.props === S.props);
     });
+    document.querySelectorAll('#segReadonly button').forEach(function (b) {
+      b.classList.toggle('on', (b.dataset.ro === '1') === !!S.readonly);
+    });
     $('ovSettings').classList.add('open');
     setTimeout(function () { $('cfgOwner').focus(); }, 60);
   }
@@ -1020,6 +1195,7 @@
   function closePrompt() { $('ovPrompt').classList.remove('open'); promptCb = null; }
 
   function newNote() {
+    if (S.readonly) { toast('当前是只读模式，无法新建', true); return; }
     askText('文件名，可以用 目录/文件名 放到子目录', '例如：日语/动词变形', '', function (v) {
       var name = String(v || '').trim().replace(/^\/+/, '');
       if (!name) return false;
@@ -1146,6 +1322,7 @@
     document.querySelectorAll('#modeSwitch button').forEach(function (b) {
       b.onclick = function () {
         if (!S.current) return;
+        if (b.dataset.mode === 'edit' && S.readonly) { toast('当前是只读模式，请到设置里切换', true); return; }
         S.mode = b.dataset.mode;
         renderMain();
       };
@@ -1163,6 +1340,7 @@
       if (act === 'tree') openDrawer('sidebar');
       if (act === 'outline') openDrawer('rightbar');
       if (act === 'edit') {
+        if (S.readonly) { toast('当前是只读模式', true); return; }
         if (!S.current) { toast('先打开一篇笔记', true); return; }
         S.mode = 'edit'; renderMain();
       }
@@ -1219,6 +1397,19 @@
       };
     });
 
+    document.querySelectorAll('#segReadonly button').forEach(function (b) {
+      b.onclick = function () {
+        document.querySelectorAll('#segReadonly button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        S.readonly = b.dataset.ro === '1';
+        saveUI();
+        applyReadonly();
+        // 正开着编辑器时切到只读，立刻退回阅读态
+        if (S.readonly && S.mode === 'edit') { S.mode = 'read'; }
+        if (S.view === 'note') renderMain();
+      };
+    });
+
     $('btnSaveSettings').onclick = async function () {
       var msg = $('cfgMsg');
       var btn = $('btnSaveSettings');
@@ -1261,6 +1452,26 @@
       toast('缓存已清空');
     };
 
+    $('btnLogout').onclick = async function () {
+      if (!confirm('将从这台设备清除令牌和已缓存的笔记，之后要重新填令牌才能看。\n\n注意：这不会吊销 GitHub 上的令牌。要彻底作废请到 GitHub 设置里删除。\n\n确定继续？')) return;
+      try { await GH.clearCache(); } catch (e) { }
+      try {
+        localStorage.removeItem(LS_CFG);
+        localStorage.removeItem(LS_CFG_OLD);
+      } catch (e) { }
+      // 内存里的配置与状态一并清空
+      S.cfg = { owner: '', repo: '', branch: 'main', path: '', token: '' };
+      try { GH.configure({ owner: '', repo: '', branch: 'main', path: '', token: '' }); } catch (e) { }
+      S.files = []; S.docs = {}; S.backlinks = {}; S.linkIndex = {};
+      S.current = ''; S.mode = 'read'; S.view = 'lib'; S.tagFilter = ''; S.query = '';
+      if ($('searchInput')) $('searchInput').value = '';
+      if ($('searchBox')) $('searchBox').classList.remove('has-value');
+      closeSettings();
+      showWelcome();
+      renderSidebar();
+      toast('已清除本地令牌');
+    };
+
     // 通用输入框
     $('promptCancel').onclick = closePrompt;
     $('promptOk').onclick = function () {
@@ -1288,10 +1499,16 @@
       }
       if (mod && e.key.toLowerCase() === 'e') {
         e.preventDefault();
+        if (S.readonly) { toast('当前是只读模式', true); return; }
         if (S.current) { S.mode = S.mode === 'edit' ? 'read' : 'edit'; renderMain(); }
         return;
       }
-      if (mod && e.key.toLowerCase() === 'n') { e.preventDefault(); newNote(); return; }
+      if (mod && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        if (S.readonly) { toast('当前是只读模式', true); return; }
+        newNote();
+        return;
+      }
       if (mod && e.key.toLowerCase() === 'r') { e.preventDefault(); sync(true); return; }
       if (e.key === 'Escape') {
         closePalette(); closeSettings(); closePrompt(); closeDrawers();
@@ -1323,6 +1540,7 @@
     applyTheme();
     checkViewport();
     bind();
+    applyReadonly();
 
     if (!S.cfg.token) {
       showWelcome();

@@ -497,6 +497,24 @@ a { color: var(--accent); text-decoration: none; }
   tab-size: 2;
 }
 
+/* [[ 双链自动补全弹层 */
+.ac-pop {
+  position: fixed; z-index: 90;
+  min-width: 240px; max-width: 340px; max-height: 224px; overflow-y: auto;
+  background: var(--bg-2); border: 1px solid var(--line);
+  border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 4px;
+  animation: pop .12s var(--ease);
+}
+.ac-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: var(--r-sm);
+  cursor: pointer; font-size: 13px; color: var(--tx-2);
+}
+.ac-item.on { background: var(--accent-bg); color: var(--tx); }
+.ac-item .ac-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-item .ac-d { font-size: 11px; color: var(--tx-3); flex: 0 0 auto; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-empty { padding: 10px 12px; color: var(--tx-3); font-size: 12.5px; }
+
 /* ---------- 浮层（命令面板 / 设置） ---------- */
 .overlay {
   position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, .45);
