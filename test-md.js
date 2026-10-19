@@ -11,7 +11,7 @@ function t(name, cond, extra) {
 }
 
 console.log('\n=== 1. 真实笔记：示例视频笔记 ===');
-const sample = fs.readFileSync('D:/Github/idea-vault/videos/2026-10-18-示例-这条可以删掉.md', 'utf8');
+const sample = fs.readFileSync('D:/Github/idea-vault-web/test/fixtures/sample-video.md', 'utf8');
 const r1 = MD.render(sample);
 t('标题取自 frontmatter', r1.title === '示例：这条可以删掉', r1.title);
 t('frontmatter 解析 tags', Array.isArray(r1.frontmatter.tags) && r1.frontmatter.tags[0] === '领域/职业', JSON.stringify(r1.frontmatter.tags));
@@ -21,7 +21,7 @@ t('正文含逐字稿段落', /很多人问我/.test(r1.html));
 t('时间戳 [00:00] 未被误解析', /\[00:00\]/.test(r1.html));
 
 console.log('\n=== 2. 真实笔记：日语笔记（表格是 L0 验收点）===');
-const jp = fs.readFileSync('C:/Users/王爱民/WorkBuddy/2026-10-18-12-18-05/idea-vault/vault/日语/日语N3学习笔记.md', 'utf8');
+const jp = fs.readFileSync('D:/Github/idea-vault-web/test/fixtures/japanese.md', 'utf8');
 const r2 = MD.render(jp);
 t('标题正确', r2.title === '日语 N3 学习笔记', r2.title);
 t('表格被渲染成 <table>', /<table class="md-table"/.test(r2.html));

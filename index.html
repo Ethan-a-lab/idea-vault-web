@@ -187,8 +187,22 @@
         <div class="sub">就是作者、链接、平台、标签那一块。折起来后点一下还能展开。</div>
       </div>
 
+      <div class="fld">
+        <label>只读模式</label>
+        <div class="seg" id="segReadonly">
+          <button data-ro="0">可编辑</button>
+          <button data-ro="1">只读</button>
+        </div>
+        <div class="sub">开启后网页隐藏新建 / 编辑 / 保存入口，只能看；写入仍用 Obsidian。</div>
+      </div>
+
       <div class="fld" style="margin-bottom:4px">
         <button class="btn" id="btnClearCache" style="width:100%">清空本地缓存（下次重新下载全部笔记）</button>
+      </div>
+
+      <div class="fld" style="margin-bottom:4px">
+        <button class="btn danger" id="btnLogout" style="width:100%">清除本地令牌（退出登录）</button>
+        <div class="sub">只清掉这台设备浏览器里的令牌和笔记缓存，<b>不会</b>吊销 GitHub 上的令牌。要彻底作废，请到 GitHub 设置里删除该 token。</div>
       </div>
     </div>
     <div class="settings-foot">
