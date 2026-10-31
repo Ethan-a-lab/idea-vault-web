@@ -1,8 +1,13 @@
-// 临时测试：在 node 里跑 md.js，验证真实笔记的渲染结果
-global.window = {};
+// md.js 渲染器回归测试：node test-md.js
+// 路径全部相对本文件，换电脑 / clone 到别处都能直接跑
+const path = require('path');
 const fs = require('fs');
-require('D:/Github/idea-vault-web/assets/md.js');
+
+global.window = {};
+require(path.join(__dirname, 'notes', 'md.js'));
 const MD = global.window.IV.MD;
+
+const FIXTURES = path.join(__dirname, 'test', 'fixtures');
 
 let pass = 0, fail = 0;
 function t(name, cond, extra) {
@@ -10,18 +15,8 @@ function t(name, cond, extra) {
   else { fail++; console.log('  ✗ ' + name + (extra ? '\n      ' + extra : '')); }
 }
 
-console.log('\n=== 1. 示例笔记：视频笔记 ===');
-const sample = fs.readFileSync('D:/Github/idea-vault-web/test/fixtures/sample-video.md', 'utf8');
-const r1 = MD.render(sample);
-t('标题取自 frontmatter', r1.title === '示例：这条可以删掉', r1.title);
-t('frontmatter 解析 tags', Array.isArray(r1.frontmatter.tags) && r1.frontmatter.tags[0] === '领域/职业', JSON.stringify(r1.frontmatter.tags));
-t('frontmatter 保留含引号的 my_take', /兴趣要先能养活你/.test(r1.frontmatter.my_take || ''), r1.frontmatter.my_take);
-t('正文有 h2 小节', r1.headings.length >= 3, 'headings=' + r1.headings.length);
-t('正文含逐字稿段落', /很多人问我/.test(r1.html));
-t('时间戳 [00:00] 未被误解析', /\[00:00\]/.test(r1.html));
-
-console.log('\n=== 2. 示例笔记：日语（表格是 L0 验收点）===');
-const jp = fs.readFileSync('D:/Github/idea-vault-web/test/fixtures/japanese.md', 'utf8');
+console.log('\n=== 1. 长文档：日语（表格是 L0 验收点）===');
+const jp = fs.readFileSync(path.join(FIXTURES, 'japanese.md'), 'utf8');
 const r2 = MD.render(jp);
 t('标题正确', r2.title === '示例：日语学习笔记', r2.title);
 t('表格被渲染成 <table>', /<table class="md-table"/.test(r2.html));
@@ -34,7 +29,7 @@ t('标题去重（h1 已提到 title）', !/<h1[^>]*>示例：日语学习笔记
 const h2s = r2.headings.map(h => h.level + ':' + h.text);
 t('大纲含「五十音图」', h2s.includes('1:五十音图'), h2s.join(' | '));
 
-console.log('\n=== 3. 语法边界 ===');
+console.log('\n=== 2. 语法边界 ===');
 const cases = [
   ['嵌套列表', '- A\n  - B\n  - C\n- D', /<ul><li>A<ul><li>B<\/li><li>C<\/li><\/ul><\/li><li>D<\/li><\/ul>/],
   ['有序列表', '1. 一\n2. 二', /<ol><li>一<\/li><li>二<\/li><\/ol>/],
@@ -48,6 +43,7 @@ const cases = [
   ['标签', '这是 #日语 和 #N3/语法', /data-tag="日语"/],
   ['HEX 颜色不被当标签', '#1e1e1e 是颜色', /#1e1e1e/],
   ['转义 HTML 防注入', '<script>alert(1)</script>', null],
+  ['方括号时间戳不被当链接', '开场 [00:00] 讲这个', /\[00:00\]/],
   ['表格对齐', '| a | b |\n|:--|--:|\n| 1 | 2 |', /text-align:right/],
 ];
 for (const [name, input, re] of cases) {
@@ -59,13 +55,13 @@ for (const [name, input, re] of cases) {
   }
 }
 
-console.log('\n=== 4. hardBreak 开关 ===');
+console.log('\n=== 3. hardBreak 开关 ===');
 const hb1 = MD.render('第一行\n第二行', { hardBreak: true }).html;
 const hb2 = MD.render('第一行\n第二行', { hardBreak: false }).html;
 t('开启时保留换行', /第一行<br>第二行/.test(hb1), hb1);
 t('关闭时折叠为空格', /第一行 第二行/.test(hb2), hb2);
 
-console.log('\n=== 5. YAML 陷阱（交接文档提到过）===');
+console.log('\n=== 4. YAML 陷阱（手写解析器的坑）===');
 const y = MD.parseYaml('title: "含冒号: 的标题"\ntags: [a, b]\nlist:\n  - x\n  - y\nempty:');
 t('引号内的冒号不被切坏', y.title === '含冒号: 的标题', y.title);
 t('行内数组', Array.isArray(y.tags) && y.tags.length === 2, JSON.stringify(y.tags));

@@ -1,26 +1,41 @@
-# 云笔记库 · 网页端
+# 个人学习站 · 网页端
 
-用 GitHub 私有仓库存 `.md` 笔记，用这个网页读。
+一个纯静态的多板块站点：首页是板块目录，下面挂「学习台」和「笔记库」。
+用 GitHub 私有仓库存 `.md` 笔记，用这个网页**只读**地看。
+
 没有服务器、没有数据库、没有账号系统——网页本身不存任何东西，数据始终在你自己的仓库里。
 
 线上地址：<https://ethan-a-lab.github.io/idea-vault-web/>
 
 ---
 
+## 板块
+
+| 板块 | 入口 | 是什么 | 数据在哪 |
+|---|---|---|---|
+| 首页 | `index.html` | 板块目录，一张卡一个板块 | 无 |
+| 学习台 | `desk/` | 清单勾进度、速记草稿、成果，可装成 PWA | 浏览器 `localStorage` |
+| 笔记库 | `notes.html` | 读私有仓库的 Markdown，三栏阅读器，**只读** | GitHub 私有库 `idea-vault` |
+
+**写入只有一条路**：本机 Obsidian 整理 → 手动推 GitHub。网页端没有任何写库的能力，
+`notes/gh.js` 里连 `putFile` 都不存在，token 只需要 `Contents: Read-only`。
+
+---
+
 ## 第一次用：三步
 
-### 1. 确认你有一个 fine-grained token
+### 1. 建一个 fine-grained token
 
 GitHub → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token
 
 - **Repository access**：只选 `idea-vault` 这一个仓库
-- **Permissions → Contents**：`Read and write`
-- **Expiration**：90 天（到期重新建一个）
+- **Permissions → Contents**：`Read-only`
+- **Expiration**：按你自己习惯
 
 > ⚠️ 令牌等于私有仓库的钥匙。**别截图、别发到聊天窗口、别提交进代码。**
 > 如果已经泄露，去 GitHub 上直接 Delete 重发一个，旧的立刻作废。
 
-### 2. 打开网页，填进去
+### 2. 打开笔记页，填一次
 
 点左上角的库名（或齿轮图标）→ 填：
 
@@ -34,61 +49,50 @@ GitHub → Settings → Developer settings → Personal access tokens → **Fine
 
 点「保存并连接」。看到左侧出现文件树、底部显示「N 篇 · 时间」，就是成功了。
 
-### 3. 把网址加到手机桌面
+配置存在 `iv:cfg` 里，**同一域名下只填一次**。换浏览器、换设备、清缓存才需要重填。
+
+### 3. 加到桌面
 
 - **iPhone**：Safari 打开 → 分享 → 添加到主屏幕
 - **Android**：Chrome 打开 → 菜单 → 添加到主屏幕
 
-加完之后像 App 一样点开就能用，不用每次输网址。
+学习台带 `manifest.webmanifest`，装上之后是独立窗口，断网也能用（缓存范围内）。
 
 ---
 
-## 日常怎么用
+## 加一个新板块
 
-### 键盘快捷键
+四个板块以外的内容（比如「读书」「课程」），加一个页面就行，不用动别人的代码：
 
-| 按键 | 作用 |
-|---|---|
-| `Ctrl/Cmd + O` | 快速跳到某篇笔记（按标题模糊搜） |
-| `Ctrl/Cmd + P` | 命令面板（新建、同步、切主题…） |
-| `Ctrl/Cmd + K` | 搜索标题和正文 |
-| `Ctrl/Cmd + E` | 阅读 / 编辑 切换 |
-| `Ctrl/Cmd + N` | 新建笔记 |
-| `Ctrl/Cmd + S` | 编辑时保存到仓库 |
-| `Ctrl/Cmd + R` | 重新拉取仓库 |
-| `Esc` | 关掉任何浮层 |
+1. 新建 `reading.html`，`<body>` 上写 `data-page="reading"`，末尾引 `assets/shell.js`
+2. `assets/shell.js` 顶部的 `NAV` 数组加一行：`{ key: 'reading', label: '读书', href: 'reading.html' }`
+3. 首页 `index.html` 里照着现有卡片加一张
+4. 如果新页面自己也有吸顶栏，在 `assets/shell.css` 里补一条，把它下推到外壳下方：
 
-### 手机上
+```css
+body[data-page="reading"] .topbar { top: var(--shell-h) !important; }
+```
 
-底部四个按钮：**全部**（卡片列表）、**目录**（左侧文件树）、**大纲**（右侧标题树）、**编辑**。
-
-表格比屏幕宽时，**左右滑动**就能看完整；表下方有提示，滑到最右自动消失。
-
-### 写笔记的两条路
-
-**A. 网页里写** —— 打开笔记 → 右上角「编辑」→ 改完按「保存到仓库」。
-保存会直接提交到 GitHub，手机上改的，电脑上刷新就能看到。
-
-**B. Obsidian 里写** —— 装插件 `Git`，设置里开「自动 commit + push」。
-写完自动推到同一个仓库，网页刷新即见。
-
-两条路写的是同一份数据，互不冲突。网页保存前会先取一次最新版本，避免覆盖 Obsidian 那边的改动。
+第 4 步容易漏。不写的话，页面自己的顶栏会和外壳导航叠在一起。
+**注意选择器要避开 `.shell` 本身**（曾经写成 `header { top: var(--shell-h) }`，结果把外壳也推下去了）。
 
 ---
 
 ## 笔记该怎么写
 
-### 基础：frontmatter
+笔记全部在私有库 `idea-vault` 里，用 Obsidian 写、推上来，网页只负责好看地读。
 
-文件最上面的 `---` 之间写属性，网页会把它们渲染成顶部的「属性面板」：
+### frontmatter
+
+文件最上面的 `---` 之间写属性，网页会渲染成顶部的「属性面板」：
 
 ```markdown
 ---
 title: 关于"兴趣变现"的一个人
 tags: [思考, 职业]
 date: 2026-10-18
-source: https://v.douyin.com/xxxx/
-status: 待回看
+source: https://example.com/xxxx/
+status: 待整理
 ---
 
 正文从这里开始……
@@ -98,63 +102,75 @@ status: 待回看
 - `tags` 支持 `[a, b]` 和每行 `- a` 两种写法
 - 值是网址会自动变成可点链接
 
-### 双链：把笔记连起来
+### 双链
 
 ```markdown
-见 [[2026-10-18-示例-这条可以删掉]]           → 显示文件名
-见 [[示例：这条可以删掉|那条视频笔记]]         → 显示成"那条视频笔记"
-见 [[某篇笔记#某个小节]]                      → 跳到指定小节
+见 [[某篇笔记]]                → 显示文件名
+见 [[某篇笔记|换个说法]]        → 显示成"换个说法"
+见 [[某篇笔记#某个小节]]        → 跳到指定小节
 ```
 
-目标可以写**文件名**、**路径**、或**标题**（网页三种都能匹配）。
-匹配不上的会显示成灰色虚线——点一下会提示"库里还没有这篇"，你可以顺手去建它。
+目标可以写**文件名**、**路径**、或**标题**（三种都能匹配）。
+匹配不上的显示成灰色虚线，点一下会提示"库里还没有这篇"。
 
 被引用的笔记底部会自动出现「被 N 篇笔记引用」，列出来源和上下文。
 
-### 标签
+### 标签与表格
 
-正文里写 `#日语` `#N3/语法` 就行，会自动变成可点的标签。
-左侧「标签」页签能看到全部标签和计数，点一下筛选。
+- 正文里写 `#日语` `#N3/语法` 会自动变成可点标签，左侧「标签」页签能看到全部和计数
+- 表格列数多时**不压扁**，而是横向滚动，表头吸顶；手机上会提示「左右滑动」
 
-### 表格
+---
 
-直接用标准 Markdown 表格语法。网页会保证：
+## 学习台怎么用
 
-- 列数多的时候**不压扁**，而是横向滚动
-- 表头在长表格里吸顶
-- 手机上会提示「左右滑动」
+- **清单**：勾选打进度，数据存 `study.done.v1`
+- **速记**：随手记，纯本地，不发任何网络请求，存 `study.notes.v1`
+- **导出 .md**：攒够了点一下，生成 `速记-YYYY-MM-DD.md`（带 frontmatter，时间正序），拖进 Obsidian 就能整理
+- **归档**：搬走但不删，留个墓碑（`del:1`），防止别的设备把它复活
+
+它的定位是**暂存箱**，不是唯一副本。整理完就清空，正式内容以 Obsidian 里的私有库为准。
 
 ---
 
 ## 代码结构
 
 ```
-index.html          页面骨架（DOM 结构，不含逻辑）
+index.html          首页：板块目录
+notes.html          笔记库入口
 assets/
-  app.css           全部样式。双主题靠 html[data-theme] 切换变量
+  shell.js          站级外壳：注入顶栏导航，板块清单在 NAV 数组
+  shell.css         外壳样式（含深色适配）
+notes/
+  app.js            笔记库逻辑：路由、文件树、阅读、命令面板
+  app.css           笔记库样式
   md.js             Markdown 渲染器（零依赖，含 frontmatter / 双链 / 表格）
-  gh.js             GitHub API 读写 + IndexedDB 缓存
-  app.js            应用逻辑（路由、文件树、阅读、编辑、命令面板）
+  gh.js             GitHub API 只读 + IndexedDB 缓存
+desk/
+  index.html        学习台
+  assets/           它的 app.js / style.css / 图标
+  data/content.js   清单内容（手写在代码里）
+  sw.js             Service Worker（只缓存 desk/ 内文件）
 test/
-  test-md.js        渲染器单元测试（31 项，node test-md.js 跑）
-  mock.js           假数据层，供本地预览用
-  make-preview.py   生成 preview.html（把 gh.js 换成 mock.js）
+  fixtures/         渲染器测试用的样本笔记（全部编造，不含真实笔记）
+test-md.js          渲染器回归测试（node test-md.js）
+tools/
+  check-public-content.js   提交前检查：阻止真实笔记进入公开仓库
 ```
 
-**为什么要自己写 Markdown 解析器**：jsdelivr / unpkg 在国内经常连不上，一挂整个页面就白屏；
-而且 `[[双链]]` 要跟库里文件做匹配，外部库做不到。自己写的代价是多几百行代码，好处是永远不会因为 CDN 挂掉而打不开。
+**为什么自己写 Markdown 解析器**：jsdelivr / unpkg 在国内经常连不上，一挂整个页面就白屏；
+而且 `[[双链]]` 要跟库里文件做匹配，外部库做不到。代价是多几百行代码，好处是永远不会因为 CDN 挂掉而打不开。
 
-### 本地预览（不用真 token）
+### 本地预览
 
 ```bash
-cd idea-vault-web
+cd 网站前端          # 或仓库根目录
 python -m http.server 8765
-# 另开一个终端
-python test/make-preview.py
-# 浏览器打开 http://127.0.0.1:8765/test/preview.html
+# 浏览器打开 http://127.0.0.1:8765/
 ```
 
-`test/fixtures/` 里放的是几篇真实笔记，改样式时能立刻看到效果。
+要看到笔记内容得填真 token（联 `api.github.com`，国内需要加速器）。
+只想看布局的话，直接打开首页和学习台就够了。
 
 ### 跑测试
 
@@ -162,7 +178,8 @@ python test/make-preview.py
 node test-md.js
 ```
 
-覆盖了嵌套列表、任务列表、代码块、引用、表格对齐、双链、标签、HTML 转义、YAML 引号陷阱等情况。
+26 项，覆盖嵌套列表、任务列表、代码块、引用、表格对齐、双链、标签、HTML 转义、
+方括号时间戳、YAML 引号陷阱。路径都是相对 `test-md.js` 的，换电脑直接能跑。
 
 ---
 
@@ -170,15 +187,14 @@ node test-md.js
 
 | 想改什么 | 改哪个文件 | 找什么 |
 |---|---|---|
-| 配色 | `app.css` | 开头的 `html[data-theme="dark"]` 变量块 |
-| 正文字号 / 行高 | `app.css` | `.md { font-size; line-height }` |
-| 阅读区宽度 | `app.css` | `:root { --read-w }` |
-| 侧栏宽度 | `app.css` | `:root { --sidebar-w }` |
-| 字体 | `app.css` | `--font-text` / `--font-ui` / `--font-mono` |
-| 属性面板显示哪些字段 | `app.js` | `LABELS` 对象 |
-| 新增一条命令 | `app.js` | `COMMANDS` 数组，照着加一条 `{id, title, run}` |
-| 表格最小列宽 | `md.js` | `parseTable` 里的 `header.length * 66` |
-| 换行行为 | `app.js` | 设置面板的「保留单换行」开关 |
+| 顶栏导航项 | `assets/shell.js` | 顶部 `NAV` 数组 |
+| 外壳配色 / 高度 | `assets/shell.css` | `--shell-h` 与各主题变量 |
+| 笔记库配色 | `notes/app.css` | `html[data-theme="dark"]` 变量块 |
+| 阅读区宽度 | `notes/app.css` | `:root { --read-w }` |
+| 属性面板显示哪些字段 | `notes/app.js` | `LABELS` 对象 |
+| 命令面板的命令 | `notes/app.js` | `COMMANDS` 数组 |
+| 表格最小列宽 | `notes/md.js` | `parseTable` 里的 `header.length * 66` |
+| 学习台清单条目 | `desk/data/content.js` | `meta` 与条目数组 |
 
 改完提交，GitHub Pages 一两分钟后自动更新。
 
@@ -187,9 +203,9 @@ node test-md.js
 ## 安全
 
 - Token 存在浏览器的 `localStorage` 里，**只存在你这台设备**，不上传任何地方
-- 网页没有后端，没有别人能读到你的 token
-- 但反过来说：**这台设备上的任何脚本都能读到它**。所以别在陌生页面里粘贴这个网页的地址，也别装来路不明的浏览器扩展
-- 令牌权限要卡死：**只给一个仓库，只给 Contents 读写**。这样就算泄露，损失也止于这一个库
+- 网页没有后端，别人读不到你的 token
+- 反过来说：**这台设备上的任何脚本都能读到它**。别在陌生页面粘贴这个网页的地址，也别装来路不明的浏览器扩展
+- 令牌权限卡死：**只给一个仓库、只给 Contents 只读**。即使泄露，最坏也只是被读走笔记，改不了
 - 想立刻失效：GitHub → Settings → Developer settings → 删掉那个 token
 
 ---
@@ -197,31 +213,23 @@ node test-md.js
 ## 已知限制
 
 1. **首次打开会慢**——要把所有笔记下载到本地缓存。之后靠 sha 比对，只拉变化的文件。
-2. **图片暂时不显示**。私有库的图片需要额外解码，目前还是占位。正文里的网络图片（`https://...`）正常。
-3. **不做删除**。网页只读和写，删除请在 Obsidian 或 GitHub 上操作——误删的代价比多两步操作大得多。
-4. **没有搜索索引**。全文搜索是遍历内存里的笔记，几百篇以内很快；上千篇会明显变慢。
-5. **冲突处理很简单**。两个人同时改同一篇，后保存的赢。自己一个人用不会遇到。
-
----
-
-## 下一步可以做的
-
-- 图片显示（走 GitHub blobs + base64）
-- 知识图谱（双链关系可视化）
-- 导出单篇为 PDF / 长图
-- 全文搜索加高亮定位
+2. **笔记页只读**。网页不能新建、不能编辑、不能删除，全部去 Obsidian 操作。这是刻意的设计。
+3. **图片暂时不显示**。私有库的图片需要额外解码。正文里的网络图片（`https://...`）正常。
+4. **没有搜索索引**。全文搜索遍历内存里的笔记，几百篇以内很快，上千篇会变慢。
+5. **离线只有学习台**，而且 Service Worker 只缓存 `desk/` 内的文件——断网时外壳的顶栏会掉样式。
 
 ---
 
 ## 这个仓库是公开的：别把真实笔记放进来
 
-`test/fixtures/` 里的笔记**全部是编造的**。用途只是给渲染器提供样本：多列表格、双链、任务列表、frontmatter。
+`test/fixtures/` 里的笔记**全部是编造的**，用途只是给渲染器提供样本：多列表格、双链、任务列表、frontmatter。
 
 真实笔记请放私有库 `idea-vault`。一旦进了这个仓库，就算后来删掉，`git log` 里也永远查得到。
 
 ### 已经有自动检查
 
-`tools/check-public-content.js` 会把私有库里有辨识度的段落做成指纹，比对本次暂存的内容，命中就拒绝提交（表格行除外——五十音表这类是公共知识，撞行不算）。
+`tools/check-public-content.js` 会把私有库里有辨识度的段落做成指纹，比对本次暂存的内容，命中就拒绝提交
+（表格行除外——五十音表这类是公共知识，撞行不算）。
 
 ```bash
 node tools/check-public-content.js     # 手动跑
@@ -230,7 +238,6 @@ node tools/check-public-content.js     # 手动跑
 它由 git 钩子自动调用。钩子不随仓库同步，**换电脑或重新 clone 后要装一次**：
 
 ```bash
-cp tools/check-public-content.js /dev/null   # 先确认文件在
 printf '#!/bin/sh\nROOT=$(git rev-parse --show-toplevel)\nnode "$ROOT/tools/check-public-content.js" || exit 1\n' > .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 ```

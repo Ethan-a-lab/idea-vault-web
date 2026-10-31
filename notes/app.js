@@ -103,7 +103,7 @@
 
   var LS_CFG = 'iv:cfg';
   var LS_UI = 'iv:ui';
-  // 旧版（视频卡片那版）用的键名，升级时把配置搬过来，免得让人重填一次令牌
+  // 旧版网页用的配置键名。升级时把配置搬过来，免得让人重填一次令牌
   var LS_CFG_OLD = 'idea-vault-cfg-v1';
 
   function loadLocal() {
@@ -130,7 +130,7 @@
           S.cfg.owner = old.owner;
           S.cfg.repo = old.repo;
           S.cfg.branch = old.branch || 'main';
-          // 旧版只读 videos 子目录；新版要读整个库，所以这里故意留空不继承
+          // 旧版只扫一个子目录；新版读整个库，所以这里故意留空，不继承子目录
           S.cfg.path = '';
           S.cfg.token = old.token;
           saveCfg();

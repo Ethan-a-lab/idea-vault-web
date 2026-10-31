@@ -550,7 +550,7 @@ mark {
 .nav a:hover { color: var(--ink); background: rgba(0, 0, 0, 0.03); }
 .nav a.on { color: var(--ink); background: rgba(0, 0, 0, 0.055); }
 
-/* ---------- 灵感速记 ---------- */
+/* ---------- 速记 ---------- */
 .compose {
   background: var(--surface);
   border: 1px solid var(--line);
