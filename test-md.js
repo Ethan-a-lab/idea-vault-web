@@ -10,7 +10,7 @@ function t(name, cond, extra) {
   else { fail++; console.log('  ✗ ' + name + (extra ? '\n      ' + extra : '')); }
 }
 
-console.log('\n=== 1. 真实笔记：示例视频笔记 ===');
+console.log('\n=== 1. 示例笔记：视频笔记 ===');
 const sample = fs.readFileSync('D:/Github/idea-vault-web/test/fixtures/sample-video.md', 'utf8');
 const r1 = MD.render(sample);
 t('标题取自 frontmatter', r1.title === '示例：这条可以删掉', r1.title);
@@ -20,19 +20,19 @@ t('正文有 h2 小节', r1.headings.length >= 3, 'headings=' + r1.headings.leng
 t('正文含逐字稿段落', /很多人问我/.test(r1.html));
 t('时间戳 [00:00] 未被误解析', /\[00:00\]/.test(r1.html));
 
-console.log('\n=== 2. 真实笔记：日语笔记（表格是 L0 验收点）===');
+console.log('\n=== 2. 示例笔记：日语（表格是 L0 验收点）===');
 const jp = fs.readFileSync('D:/Github/idea-vault-web/test/fixtures/japanese.md', 'utf8');
 const r2 = MD.render(jp);
-t('标题正确', r2.title === '日语 N3 学习笔记', r2.title);
+t('标题正确', r2.title === '示例：日语学习笔记', r2.title);
 t('表格被渲染成 <table>', /<table class="md-table"/.test(r2.html));
 t('表格有外层滚动容器', /<div class="table-wrap">/.test(r2.html));
 t('第一张表是 11 列表头', (r2.html.split('</thead>')[0].match(/<\/th>/g) || []).length === 11,
   'th=' + (r2.html.split('</thead>')[0].match(/<\/th>/g) || []).length);
-t('多张表格都渲染出来', (r2.html.match(/<table class="md-table"/g) || []).length === 20,
+t('多张表格都渲染出来', (r2.html.match(/<table class="md-table"/g) || []).length >= 8,
   'tables=' + (r2.html.match(/<table class="md-table"/g) || []).length);
-t('标题去重（h1 已提到 title）', !/<h1[^>]*>日语 N3 学习笔记<\/h1>/.test(r2.html));
+t('标题去重（h1 已提到 title）', !/<h1[^>]*>示例：日语学习笔记<\/h1>/.test(r2.html));
 const h2s = r2.headings.map(h => h.level + ':' + h.text);
-t('大纲含「日语的声调」', h2s.includes('1:日语的声调'), h2s.join(' | '));
+t('大纲含「五十音图」', h2s.includes('1:五十音图'), h2s.join(' | '));
 
 console.log('\n=== 3. 语法边界 ===');
 const cases = [

@@ -6,7 +6,7 @@ window.IV = window.IV || {};
 
   var FILES = [
     { path: 'videos/2026-10-18-示例-这条可以删掉.md', url: 'fixtures/sample-video.md', sha: 'aaa1', size: 1443 },
-    { path: '日语/日语N3学习笔记.md', url: 'fixtures/japanese.md', sha: 'aaa2', size: 13984 },
+    { path: '日语/示例-日语学习笔记.md', url: 'fixtures/japanese.md', sha: 'aaa2', size: 5600 },
     { path: '思考/关于兴趣变现.md', url: 'fixtures/linked.md', sha: 'aaa3', size: 900 }
   ];
 
