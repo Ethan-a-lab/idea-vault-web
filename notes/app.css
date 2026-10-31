@@ -231,14 +231,6 @@ a { color: var(--accent); text-decoration: none; }
 }
 .main-head .crumbs b { color: var(--tx-2); font-weight: 500; }
 .main-head .spacer { flex: 1; }
-.main-head .mode-switch {
-  display: flex; background: var(--bg-3); border-radius: var(--r-sm); padding: 2px;
-}
-.main-head .mode-switch button {
-  border: none; background: transparent; color: var(--tx-3);
-  font-size: 12px; padding: 4px 10px; border-radius: 4px; cursor: pointer;
-}
-.main-head .mode-switch button.on { background: var(--bg); color: var(--tx); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
 
 .main-body { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; scroll-behavior: smooth; }
 
@@ -470,13 +462,6 @@ a { color: var(--accent); text-decoration: none; }
 .rb-info { padding: 0 16px; font-size: 11.5px; color: var(--tx-3); line-height: 1.9; }
 .rb-info b { color: var(--tx-2); font-weight: 500; }
 
-/* ---------- 编辑器 ---------- */
-.editor-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.editor-bar {
-  display: flex; align-items: center; gap: 8px; padding: 8px 16px;
-  border-bottom: 1px solid var(--line-soft); font-size: 12px; color: var(--tx-3);
-}
-.editor-bar .spacer { flex: 1; }
 .btn {
   border: 1px solid var(--line); background: var(--bg-2); color: var(--tx);
   padding: 6px 14px; border-radius: var(--r-sm); font-size: 13px; cursor: pointer;
@@ -487,33 +472,6 @@ a { color: var(--accent); text-decoration: none; }
 .btn.primary:hover { background: var(--accent-2); }
 .btn:disabled { opacity: .45; cursor: default; }
 .btn.danger { color: #f85149; border-color: color-mix(in srgb, #f85149 40%, var(--line)); }
-
-.editor-area {
-  display: block; flex: 1; width: 100%; max-width: calc(var(--read-w) + 34px);
-  margin: 0 auto; resize: none; border: none; outline: none;
-  background: var(--bg); color: var(--tx);
-  font-family: var(--font-mono); font-size: 14px; line-height: 1.75;
-  padding: 26px 17px 90px;
-  tab-size: 2;
-}
-
-/* [[ 双链自动补全弹层 */
-.ac-pop {
-  position: fixed; z-index: 90;
-  min-width: 240px; max-width: 340px; max-height: 224px; overflow-y: auto;
-  background: var(--bg-2); border: 1px solid var(--line);
-  border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 4px;
-  animation: pop .12s var(--ease);
-}
-.ac-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 10px; border-radius: var(--r-sm);
-  cursor: pointer; font-size: 13px; color: var(--tx-2);
-}
-.ac-item.on { background: var(--accent-bg); color: var(--tx); }
-.ac-item .ac-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ac-item .ac-d { font-size: 11px; color: var(--tx-3); flex: 0 0 auto; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ac-empty { padding: 10px 12px; color: var(--tx-3); font-size: 12.5px; }
 
 /* ---------- 浮层（命令面板 / 设置） ---------- */
 .overlay {

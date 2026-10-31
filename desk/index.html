@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>学习台 · 金融 外语 计算机</title>
+<meta name="description" content="个人学习管理页：金融、外语、计算机三条主线的内容索引与进度追踪。">
+
+<!-- 装到桌面用：这三个 meta 决定安卓/iOS 打开时是否隐藏地址栏 -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FAF8F3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="学习台">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="../assets/shell.css">
+</head>
+<body data-page="desk">
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="#/">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span id="brand-name">学习台</span>
+    </a>
+
+    <nav class="nav" aria-label="主导航">
+      <a href="#/" data-nav="home">清单</a>
+      <a href="#/notes" data-nav="notes">速记</a>
+      <a href="#/work" data-nav="work">成果</a>
+    </nav>
+
+    <div class="tools">
+      <div class="search">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M10.8 10.8L14 14"/></svg>
+        <input id="q" type="search" placeholder="搜索条目、备注…" autocomplete="off" aria-label="搜索">
+      </div>
+      <button id="btn-sync" class="syncbtn" title="跨设备同步（可选）。国内直连 GitHub 不稳，需要加速器，不配也能正常记录">
+        <span class="sync-dot" id="sync-dot"></span>
+        <span id="sync-text">本地</span>
+      </button>
+      <button id="btn-export" class="btn" title="把进度和草稿导出成 JSON，备份用">导出</button>
+      <button id="btn-import" class="btn" title="从导出的 JSON 恢复">导入</button>
+      <input id="file-import" type="file" accept="application/json" hidden>
+    </div>
+  </div>
+</header>
+
+<main id="app" class="wrap" role="main"></main>
+
+<footer class="foot wrap">
+  <span id="foot-note">进度保存在本机浏览器，清缓存会丢，记得定期导出。</span>
+</footer>
+
+<!-- 手机上的底部导航；桌面端用顶部那一排，这个隐藏 -->
+<nav class="tabbar" aria-label="底部导航">
+  <a href="#/" data-tab="home">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    <span>清单</span>
+  </a>
+  <a href="#/notes" data-tab="notes" class="tab-main">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    <span>速记</span>
+  </a>
+  <a href="#/work" data-tab="work">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v13H4zM9 7V4h6v3"/></svg>
+    <span>成果</span>
+  </a>
+</nav>
+
+<div id="gh-panel" class="panel" hidden>
+  <div class="panel-box" role="dialog" aria-modal="true" aria-labelledby="gh-title">
+    <h2 id="gh-title">跨设备同步<span class="opt">可选</span></h2>
+    <p class="panel-hint">配了它，手机和电脑看到同一份速记。但国内直连 GitHub 不稳，<strong>得开着加速器才能用</strong>，所以默认不启用。<br>不配也完全能用：照常记录，攒够了「导出 .md」搬进 Obsidian 就行。</p>
+
+    <div class="field"><label for="gh-owner">用户名</label><input id="gh-owner" placeholder="Ethan-a-lab" autocomplete="off"></div>
+    <div class="field"><label for="gh-repo">仓库名</label><input id="gh-repo" placeholder="study-data" autocomplete="off"></div>
+    <div class="field"><label for="gh-branch">分支</label><input id="gh-branch" placeholder="main" autocomplete="off"></div>
+    <div class="field"><label for="gh-path">文件路径</label><input id="gh-path" placeholder="progress.json" autocomplete="off"></div>
+    <div class="field"><label for="gh-token">Token</label><input id="gh-token" type="password" placeholder="github_pat_..." autocomplete="off"></div>
+
+    <p class="panel-note"><strong>令牌别截图</strong>，它等于那个库的钥匙。令牌只存在这台设备的浏览器里，权限只勾 Contents: Read and write，只授权这一个仓库。</p>
+    <p class="panel-note">建议单独建一个空私有仓库存数据，<strong>别混进笔记库</strong>——否则你手动推笔记时会被这些机器提交挡下来。</p>
+
+    <div class="panel-actions">
+      <button class="btn" id="gh-cancel">取消</button>
+      <button class="btn-primary" id="gh-save">保存并测试</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="data/content.js"></script>
+<script src="assets/app.js"></script>
+<script src="../assets/shell.js"></script>
+</body>
+</html>

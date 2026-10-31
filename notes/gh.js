@@ -226,31 +226,6 @@ window.IV = window.IV || {};
   }
 
   /**
-   * 写入 / 新建文件
-   */
-  async function putFile(path, content, sha, message) {
-    var body = {
-      message: message || ('更新 ' + path),
-      content: utf8ToB64(content),
-      branch: cfg.branch
-    };
-    if (sha) body.sha = sha;
-    var data = await request(repoPath() + '/contents/' + encodePath(path), {
-      token: cfg.token, method: 'PUT', body: body
-    });
-    var newSha = data.content && data.content.sha;
-    if (newSha) await cacheSet(newSha, content);
-    return { sha: newSha, commit: data.commit && data.commit.sha };
-  }
-
-  async function deleteFile(path, sha, message) {
-    return request(repoPath() + '/contents/' + encodePath(path), {
-      token: cfg.token, method: 'DELETE',
-      body: { message: message || ('删除 ' + path), sha: sha, branch: cfg.branch }
-    });
-  }
-
-  /**
    * 验证令牌 + 仓库是否可用
    */
   async function verify() {
@@ -295,8 +270,6 @@ window.IV = window.IV || {};
     listTree: listTree,
     readBlob: readBlob,
     getFile: getFile,
-    putFile: putFile,
-    deleteFile: deleteFile,
     verify: verify,
     readMany: readMany,
     clearCache: cacheClear,
