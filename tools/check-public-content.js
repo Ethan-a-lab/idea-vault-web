@@ -31,6 +31,12 @@ function norm(s) {
     .toLowerCase();
 }
 
+// 表格行不参与比对：五十音表、助词表这类是公共知识，
+// 示例数据和真实笔记撞行很正常，拦它只会制造误判，最后逼人把检查关掉。
+function isTableRow(line) {
+  return /^\s*\|/.test(line);
+}
+
 function walk(dir, out) {
   let list;
   try { list = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return out; }
@@ -55,6 +61,7 @@ for (const f of walk(VAULT, [])) {
   try { text = fs.readFileSync(f, 'utf8'); } catch (e) { continue; }
   const rel = path.relative(VAULT, f).replace(/\\/g, '/');
   for (const line of text.split(/\r?\n/)) {
+    if (isTableRow(line)) continue;
     const n = norm(line);
     if (n.length >= MIN_LEN && !fingerprint.has(n)) fingerprint.set(n, rel);
   }
@@ -97,6 +104,7 @@ for (const file of staged) {
 
   const lines = content.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
+    if (isTableRow(lines[i])) continue;
     const n = norm(lines[i]);
     if (n.length < MIN_LEN) continue;
     if (fingerprint.has(n)) {

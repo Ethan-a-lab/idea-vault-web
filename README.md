@@ -210,3 +210,35 @@ node test-md.js
 - 知识图谱（双链关系可视化）
 - 导出单篇为 PDF / 长图
 - 全文搜索加高亮定位
+
+---
+
+## 这个仓库是公开的：别把真实笔记放进来
+
+`test/fixtures/` 里的笔记**全部是编造的**。用途只是给渲染器提供样本：多列表格、双链、任务列表、frontmatter。
+
+真实笔记请放私有库 `idea-vault`。一旦进了这个仓库，就算后来删掉，`git log` 里也永远查得到。
+
+### 已经有自动检查
+
+`tools/check-public-content.js` 会把私有库里有辨识度的段落做成指纹，比对本次暂存的内容，命中就拒绝提交（表格行除外——五十音表这类是公共知识，撞行不算）。
+
+```bash
+node tools/check-public-content.js     # 手动跑
+```
+
+它由 git 钩子自动调用。钩子不随仓库同步，**换电脑或重新 clone 后要装一次**：
+
+```bash
+cp tools/check-public-content.js /dev/null   # 先确认文件在
+printf '#!/bin/sh\nROOT=$(git rev-parse --show-toplevel)\nnode "$ROOT/tools/check-public-content.js" || exit 1\n' > .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+误判时临时跳过：`SKIP_PUBLIC_CHECK=1 git commit -m "..."`。
+私有库搬家了：`VAULT_DIR="D:/新路径" node tools/check-public-content.js`。
+
+### 顺带两条
+
+- **截图**：`test/*.png` 已在 `.gitignore` 里。别在别处提交带笔记内容的截图。
+- **commit message**：别把笔记原文粘进提交说明，它同样永久可见。
