@@ -1,6 +1,6 @@
 {
-  "name": "学习台",
-  "short_name": "学习台",
+  "name": "学习台 · 站点",
+  "short_name": "站点",
   "description": "金融 · 外语 · AI：清单、速记与成果，以及只读笔记库",
   "lang": "zh-CN",
   "start_url": "./",

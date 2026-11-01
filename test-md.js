@@ -67,6 +67,37 @@ t('引号内的冒号不被切坏', y.title === '含冒号: 的标题', y.title)
 t('行内数组', Array.isArray(y.tags) && y.tags.length === 2, JSON.stringify(y.tags));
 t('多行数组', Array.isArray(y.list) && y.list[1] === 'y', JSON.stringify(y.list));
 
+console.log('\n=== 5. 安全过滤（裸 HTML / 危险协议）===');
+
+// 事件属性
+const x1 = MD.render('<img src="a.png" onerror="alert(1)">').html;
+t('裸 HTML 的 onerror 被清掉', !/onerror/i.test(x1) && /<img/.test(x1), x1);
+
+// HTML 块里夹带的 script（整行以 <script> 开头的会被转义，这种夹在块里的才危险）
+const x2 = MD.render('<div>\n<script>alert(1)</script>\n</div>').html;
+t('块内 script 连内容一起删', !/<script/i.test(x2) && !/alert\(1\)/.test(x2), x2);
+
+// javascript: 链接
+const x3 = MD.render('[点我](javascript:window.name=1)').html;
+t('javascript: 链接被拦，文字留下', !/<a /.test(x3) && /点我/.test(x3), x3);
+
+// 实体编码绕过：&#106;avascript: 浏览器渲染 href 时会先解实体
+const x4 = MD.render('[点我](&#106;avascript:window.name=1)').html;
+t('实体编码的协议也拦得住', !/<a /.test(x4) && /点我/.test(x4), x4);
+
+// iframe 的 srcdoc 本身就是一段 HTML
+const x5 = MD.render('<div><iframe srcdoc="&lt;script&gt;alert(1)&lt;/script&gt;"></iframe></div>').html;
+t('iframe 的 srcdoc 被删', !/srcdoc/i.test(x5), x5);
+
+// data:text/html 图片
+const x6 = MD.render('![图](data:text/html;base64,PHNjcmlwdD4=)').html;
+t('data:text/html 图片被拦', !/<img/.test(x6), x6);
+
+// 正常链接不能被误伤
+const x7 = MD.render('[官网](https://example.com/a) \n![pic](https://example.com/a.png)').html;
+t('正常 https 链接与图片仍在',
+  /href="https:\/\/example\.com\/a"/.test(x7) && /target="_blank"/.test(x7) && /<img class="md-img"/.test(x7), x7);
+
 console.log('\n----------------------------------------');
 console.log(`通过 ${pass} 项，失败 ${fail} 项`);
 process.exit(fail ? 1 : 0);

@@ -93,6 +93,49 @@ window.IV = window.IV || {};
     return id;
   }
 
+  /* ---------- 安全：链接协议 + 裸 HTML ---------- */
+
+  // 把 &#106; / &#x6a; 这类实体还原。不还原的话 jav&#x09;ascript: 能绕过协议检查——
+  // 浏览器渲染 href 时是会先解实体的。
+  function decodeEntities(s) {
+    return String(s)
+      .replace(/&#x([0-9a-f]+);/gi, function (m, h) { return String.fromCharCode(parseInt(h, 16)); })
+      .replace(/&#(\d+);/g, function (m, d) { return String.fromCharCode(parseInt(d, 10)); });
+  }
+
+  // 协议白名单：没协议的（相对路径、#锚点）放行；有协议的只认 http/https/mailto/tel
+  function urlOk(url, fromImage) {
+    var u = decodeEntities(String(url)).replace(/[\u0000-\u0020\u00a0\u200b-\u200f]/g, '');
+    if (!/^[a-z][a-z0-9+.\-]*:/i.test(u)) return true;
+    if (/^(https?|mailto|tel):/i.test(u)) return true;
+    // 图片允许内联 base64；其他 data: 一律拦（data:text/html 里能塞脚本）
+    if (fromImage && /^data:image\/(png|jpe?g|gif|webp|avif);base64,/i.test(u)) return true;
+    return false;
+  }
+
+  // 裸 HTML 块（<div> <img> 这类）原样输出前先过一遍：
+  // 删危险标签、事件属性、不安全协议。黑名单式，够挡住脚本执行；
+  // 哪天要读别人的库，应该换成白名单或 DOMPurify。
+  function cleanHtml(html) {
+    var out = String(html);
+    // 1) 连内容一起删
+    out = out.replace(/<(script|style|iframe|object|embed|form)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '');
+    // 2) 落单的（自闭合或没闭合的）也删
+    out = out.replace(/<\/?(script|style|iframe|object|embed|form|link|meta|base|svg|math)\b[^>]*>/gi, '');
+    // 3) srcdoc 的值本身就是一段 HTML，整条删
+    out = out.replace(/\ssrcdoc\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+    // 4) 事件属性：onclick / onerror / onload …
+    out = out.replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+    // 5) URL 属性里的危险协议，值换成 #
+    out = out.replace(/\s(href|src|xlink:href|action|formaction|poster)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi,
+      function (m, name, val) {
+        var bare = val.replace(/^["']/, '').replace(/["']$/, '');
+        var isSrc = /^(src|poster|xlink:href)$/i.test(name);
+        return urlOk(bare, isSrc) ? m : ' ' + name + '="#"';
+      });
+    return out;
+  }
+
   /* ---------- 行内渲染 ---------- */
 
   var PLACE = '\u0001'; // 占位符分隔符
@@ -126,13 +169,19 @@ window.IV = window.IV || {};
         esc(label) + '</a>');
     });
 
-    // 3) 图片
+    // 3) 图片（协议不安全就降级成文字，不生成 img）
     src = src.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;([^&]*)&quot;)?\)/g, function (m, alt, url) {
+      if (!urlOk(url, true)) {
+        return put('<span class="md-blocked" title="已拦截：不安全的链接">' + esc(alt || '图片') + '</span>');
+      }
       return put('<img class="md-img" src="' + esc(url) + '" alt="' + esc(alt) + '" loading="lazy">');
     });
 
     // 4) 普通链接
     src = src.replace(/\[([^\]]*)\]\(([^)\s]+)\)/g, function (m, label, url) {
+      if (!urlOk(url, false)) {
+        return put('<span class="md-blocked" title="已拦截：不安全的链接">' + esc(label) + '</span>');
+      }
       var external = /^https?:\/\//i.test(url);
       return put('<a class="md-link" href="' + esc(url) + '"' +
         (external ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' + esc(label) + '</a>');
@@ -372,12 +421,13 @@ window.IV = window.IV || {};
         i = lst.next; continue;
       }
 
-      // HTML 块：整行是标签开头的，原样输出（允许笔记里手写少量 HTML）
+      // HTML 块：整行是标签开头的，允许笔记里手写少量 HTML，
+      // 但必须过 cleanHtml——否则 <img onerror> 这类会直接执行
       if (/^\s*<(div|table|details|summary|figure|img|br|iframe|video|audio|picture|p|ul|ol|li)\b/i.test(line)) {
         var htmlBuf = [line];
         i++;
         while (i < lines.length && !isBlank(lines[i])) { htmlBuf.push(lines[i]); i++; }
-        out.push(htmlBuf.join('\n'));
+        out.push(cleanHtml(htmlBuf.join('\n')));
         continue;
       }
 
@@ -480,5 +530,8 @@ window.IV = window.IV || {};
     };
   }
 
-  IV.MD = { render: render, esc: esc, inline: inline, parseYaml: parseYaml, slug: slug };
+  IV.MD = {
+    render: render, esc: esc, inline: inline, parseYaml: parseYaml, slug: slug,
+    cleanHtml: cleanHtml, urlOk: urlOk
+  };
 })(window.IV);

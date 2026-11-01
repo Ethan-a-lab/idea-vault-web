@@ -18,22 +18,39 @@ window.IV = window.IV || {};
   var memCache = new Map();      // IndexedDB 不可用时的退路
   var useMem = false;
 
+  // 打开 IndexedDB。隐私模式或 file:// 下 open 可能一直不回调，
+  // 所以 2.5 秒还没结果就放弃、退回内存缓存——否则同步会永远卡在「同步中…」。
   function openDB() {
     if (dbPromise) return dbPromise;
     dbPromise = new Promise(function (resolve) {
       if (!('indexedDB' in window)) { useMem = true; resolve(null); return; }
+
+      var settled = false, timer = null;
+      function finish(db) {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        resolve(db);
+      }
+
       var req;
       try { req = indexedDB.open('idea-vault', 1); }
       catch (e) { useMem = true; resolve(null); return; }
+
       req.onupgradeneeded = function () {
         var db = req.result;
         if (!db.objectStoreNames.contains('blobs')) db.createObjectStore('blobs');
         if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
       };
-      req.onsuccess = function () { resolve(req.result); };
-      req.onerror = function () { useMem = true; resolve(null); };
-      // 某些浏览器隐私模式下 open 会挂住，2 秒后放弃
-      setTimeout(function () { if (!dbPromise.__done) { /* noop */ } }, 2000);
+      req.onsuccess = function () { finish(req.result); };
+      req.onerror = function () { useMem = true; finish(null); };
+      req.onblocked = function () { useMem = true; finish(null); };
+
+      timer = setTimeout(function () {
+        if (settled) return;
+        useMem = true;      // 之后读写都走内存，不再等它
+        finish(null);
+      }, 2500);
     });
     return dbPromise;
   }
@@ -103,7 +120,7 @@ window.IV = window.IV || {};
     var msg = '';
     if (status === 401) msg = '令牌无效或已过期，去设置里重新填一个';
     else if (status === 403) {
-      msg = '没有权限，或触发了 GitHub 限流。检查令牌是否勾了「Contents: Read and write」';
+      msg = '没有权限，或触发了 GitHub 限流。检查令牌是否只授权了这一个仓库、权限为「Contents: Read-only」';
       if (body && body.message && /rate limit/i.test(body.message)) msg = '请求太频繁，等 1 小时或重新登录再来';
     }
     else if (status === 404) msg = '仓库或文件不存在。检查用户名 / 仓库名 / 分支名，以及令牌是否有这个库的权限';

@@ -101,8 +101,29 @@
     lastSync: 0
   };
 
-  var LS_CFG = 'iv:cfg';
-  var LS_UI = 'iv:ui';
+  // 解析结果按 sha 缓存：点「同步」时，只有内容真变了的笔记才重新解析。
+  // hardBreak 会影响解析结果，所以也进 key；否则改显示设置后拿到的是旧结果。
+  var parseCache = new Map();
+  function parseOnce(raw, sha) {
+    var key = (sha || '') + '|' + (S.hardBreak ? 1 : 0);
+    if (sha && parseCache.has(key)) return parseCache.get(key);
+    var parsed = MD.render(raw, { hardBreak: S.hardBreak });
+    if (sha) {
+      if (parseCache.size > 400) parseCache.clear();   // 别让它无限长
+      parseCache.set(key, parsed);
+    }
+    return parsed;
+  }
+
+  // 换行设置变了：不重新联网，只把已在内存里的原文按新设置重解析一遍
+  function reparseAll() {
+    Object.keys(S.docs).forEach(function (path) {
+      var d = S.docs[path];
+      if (d && typeof d.raw === 'string') d.parsed = parseOnce(d.raw, d.sha);
+    });
+  }
+
+  var LS_CFG = 'iv:cfg';  var LS_UI = 'iv:ui';
   // 旧版网页用的配置键名。升级时把配置搬过来，免得让人重填一次令牌
   var LS_CFG_OLD = 'idea-vault-cfg-v1';
 
@@ -187,7 +208,7 @@
         S.docs[f.path] = {
           raw: raw,
           sha: f.sha,
-          parsed: MD.render(raw, { hardBreak: S.hardBreak })
+          parsed: parseOnce(raw, f.sha)
         };
         S.linkIndex[f.path.toLowerCase()] = f.path;
         S.linkIndex[f.path.replace(/\.md$/i, '').toLowerCase()] = f.path;
@@ -1055,6 +1076,10 @@
         document.querySelectorAll('#segBreak button').forEach(function (x) { x.classList.remove('on'); });
         b.classList.add('on');
         S.hardBreak = b.dataset.break === '1';
+        saveUI();
+        // 换行方式变了，已解析的内容全部过期，得重解析一次才看得出差别
+        reparseAll();
+        if (S.view === 'note') renderMain();
       };
     });
 
