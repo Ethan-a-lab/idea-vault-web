@@ -154,6 +154,16 @@
     });
   }
   function findP(id) { return list.pillars.filter(function (p) { return p.id === id; })[0]; }
+  /* 同一「大类」的板块共用一个颜色：以大类的第一个板块的颜色为准。
+     这样英语、日语填了「外语」就自动同色，不用手动挑。 */
+  function effColor(p) {
+    if (!p || !p.group) return (p && p.color) || COLORS[0];
+    for (var i = 0; i < list.pillars.length; i++) {
+      var q = list.pillars[i];
+      if (q.group && q.group === p.group) return q.color || COLORS[0];
+    }
+    return p.color || COLORS[0];
+  }
   function findM(pid, mid) {
     var p = findP(pid);
     return p ? (p.modules || []).filter(function (m) { return m.id === mid; })[0] : null;
@@ -349,6 +359,9 @@
   }
 
   function anyOpen() {
+    /* 先看 DOM：界面上真有开着的章节，就算开着。
+       这一层是为了兜住「状态和界面不一致」的情况——按钮文字跟着眼睛看到的走。 */
+    if (document.querySelector('.m.open')) return true;
     var open = false;
     list.pillars.forEach(function (p) {
       (p.modules || []).forEach(function (m) { if (ui.expand[p.id + '/' + m.id]) open = true; });
@@ -411,7 +424,8 @@
     if (kind === 'pillar') {
       var picked = d.color || COLORS[0];
       return '<div class="form" data-form="pillar">' +
-        '<input class="inp name" data-f="name" placeholder="板块名称，例如：金融" value="' + esc(d.name) + '">' +
+        '<input class="inp name" data-f="name" placeholder="板块名称，例如：英语" value="' + esc(d.name) + '">' +
+        '<input class="inp small" data-f="group" placeholder="大类（可选），例如：外语" value="' + esc(d.group) + '">' +
         '<span class="dots" data-f="color">' + COLORS.map(function (c) {
           return '<b data-color="' + c + '" style="background:' + c + '" class="' + (c === picked ? 'on' : '') + '"></b>';
         }).join('') + '</span>' +
@@ -525,7 +539,7 @@
       if (!mEl) return;
       var items = m.items || [];
       var done = items.filter(function (it) { return lvOf(it) === 3; }).length;
-      paintCells(mEl, p.color, items);
+      paintCells(mEl, effColor(p), items);
       mEl.querySelector('.m-num').textContent = items.length ? done + '/' + items.length : '—';
     });
   }
@@ -551,20 +565,22 @@
       var total = 0;
       mods.forEach(function (m) { total += (m.items || []).length; });
       var pct = pctOf(p);
+      var pc = effColor(p);
 
       return '<section class="pillar' + (ui.first ? ' enter' : '') + '"' +
         (ui.first ? ' style="--d:' + Math.min(pi, 6) * 70 + '"' : '') +
         ' data-pid="' + p.id + '">' +
         '<div class="p-head">' +
-          '<span class="p-dot" style="background:' + p.color + '"></span>' +
+          '<span class="p-dot" style="background:' + pc + '"></span>' +
           '<span class="p-name">' + esc(p.name) + '</span>' +
+          (p.group ? '<span class="p-group" style="color:' + pc + ';border-color:' + shade(pc, .38) + '">' + esc(p.group) + '</span>' : '') +
           '<span class="p-act">' +
             '<button class="mini" data-act="addModule" data-pid="' + p.id + '">＋ 章节</button>' +
             '<button class="mini" data-act="editPillar" data-pid="' + p.id + '">改</button>' +
             '<button class="mini danger" data-act="delPillar" data-pid="' + p.id + '">删</button>' +
           '</span>' +
           '<span class="p-count">' + mods.length + ' 章节 · ' + total + ' 条 · ' + pct + '%</span>' +
-          '<span class="p-bar" style="color:' + p.color + '"><i style="width:' + pct + '%"></i></span>' +
+          '<span class="p-bar" style="color:' + pc + '"><i style="width:' + pct + '%"></i></span>' +
         '</div>' +
         mods.map(function (m) { return moduleHTML(p, m); }).join('') +
         (mods.length || (ui.form && ui.form.kind === 'module' && ui.form.pid === p.id) ? ''
@@ -581,13 +597,14 @@
     var items = m.items || [];
     var done = items.filter(function (it) { return lvOf(it) === 3; }).length;
     var open = ui.expand[p.id + '/' + m.id];
+    var pcolor = effColor(p);
 
     var cells = items.length
       ? items.map(function (it) {
           var l = lvOf(it);
-          return '<i style="background:' + (l ? shade(p.color, ALPHA[l]) : shade(p.color, .13)) + '"></i>';
+          return '<i style="background:' + (l ? shade(pcolor, ALPHA[l]) : shade(pcolor, .13)) + '"></i>';
         }).join('')
-      : '<i style="background:' + shade(p.color, .13) + '"></i><i style="background:' + shade(p.color, .13) + '"></i><i style="background:' + shade(p.color, .13) + '"></i>';
+      : '<i style="background:' + shade(pcolor, .13) + '"></i><i style="background:' + shade(pcolor, .13) + '"></i><i style="background:' + shade(pcolor, .13) + '"></i>';
 
     var lis = items.map(function (it) {
       var l = lvOf(it);
@@ -596,8 +613,8 @@
         var on = d < l;
         return '<b data-act="lv" data-pid="' + p.id + '" data-mid="' + m.id + '" data-iid="' + it.id +
           '" data-lv="' + (d + 1) + '"' +
-          ' style="background:' + (on ? shade(p.color, ALPHA[d + 1]) : 'transparent') +
-          ';border-color:' + (on ? p.color : shade(p.color, .34)) + '" title="' + LV[d + 1] + '"></b>';
+          ' style="background:' + (on ? shade(pcolor, ALPHA[d + 1]) : 'transparent') +
+          ';border-color:' + (on ? pcolor : shade(pcolor, .34)) + '" title="' + LV[d + 1] + '"></b>';
       }).join('');
 
       var ref = it.ref
@@ -842,8 +859,9 @@
       if (ui.form.mode === 'edit') {
         var p0 = findP(ui.form.pid);
         p0.name = val.name; p0.color = color;
+        p0.group = val.group || '';
       } else {
-        var newP = { id: uid(), name: val.name, color: color, modules: [] };
+        var newP = { id: uid(), name: val.name, color: color, group: val.group || '', modules: [] };
         list.pillars.push(newP);
         ui.flash = { t: 'pillar', id: newP.id, scroll: true };
       }
@@ -1002,7 +1020,7 @@
       },
       pillars: list.pillars.map(function (p) {
         return {
-          id: p.id, name: p.name, en: '', color: p.color, desc: '',
+          id: p.id, name: p.name, en: '', color: p.color, group: p.group || '', desc: '',
           modules: (p.modules || []).map(function (m) {
             return {
               id: m.id, name: m.name, goal: m.goal || '', status: '',
@@ -1038,7 +1056,7 @@
     if (!confirm('把旧版 content.js 的 ' + oldItemCount() + ' 条导入进来？导完可以逐条删。')) return;
     var v2 = { v: 2, pillars: [], updated: '' };
     (window.CONTENT.pillars || []).forEach(function (p) {
-      var np = { id: uid(), name: p.name, color: p.color || COLORS[0], modules: [] };
+      var np = { id: uid(), name: p.name, color: p.color || COLORS[0], group: p.group || '', modules: [] };
       (p.modules || []).forEach(function (m) {
         np.modules.push({
           id: uid(), name: m.name, goal: m.goal || '',
@@ -1133,7 +1151,7 @@
     }
     if (act === 'editPillar') {
       var p = findP(pid);
-      openForm('pillar', { pid: pid, mode: 'edit', data: { name: p.name, color: p.color } });
+      openForm('pillar', { pid: pid, mode: 'edit', data: { name: p.name, color: p.color, group: p.group || '' } });
       return;
     }
     if (act === 'editModule') {
@@ -1175,7 +1193,7 @@
       item.lv = (before === want) ? want - 1 : want;
       saveList();
       var row = el.closest('.item');
-      if (row) applyLevel(row, findP(pid).color, lvOf(item), true);
+      if (row) applyLevel(row, effColor(findP(pid)), lvOf(item), true);
       paintAggregates(pid);
       /* 只刷数字，不重建统计条 */
       var t = tally();
@@ -1198,16 +1216,46 @@
       return;
     }
 
-    /* 全部展开：逐个错开 28ms，形成瀑布 */
+    /* 全部展开 / 全部收起。
+       状态以 DOM 为准（谁真的开着就收起），不再只看 ui.expand —— 这样哪怕
+       之前某次渲染把状态弄岔了，点一下也一定能收起来。
+       收起时不排队动画：所有章节同时落到 0，快、且不会互相抢定时器。 */
     if (act === 'toggleAll') {
-      var open = !anyOpen();
+      var mods = document.querySelectorAll('.m');
+      var openNow = document.querySelectorAll('.m.open').length > 0;
+      var open = !openNow;
+
       ui.expand = {};
-      Array.prototype.forEach.call(document.querySelectorAll('.m'), function (mEl, i) {
+      Array.prototype.forEach.call(mods, function (mEl, i) {
         var k = mEl.dataset.pid + '/' + mEl.dataset.mid;
         if (open) ui.expand[k] = true;
-        setTimeout(function () { setOpen(mEl, open); }, Math.min(i, 14) * 28);
+        var box = mEl.querySelector('.items');
+        if (!box) return;
+        clearTimeout(box._settle);
+        clearTimeout(box._queued);
+        var step = function () {
+          var cur = box.getBoundingClientRect().height;
+          box.style.height = cur + 'px';
+          void box.offsetHeight;
+          mEl.classList.toggle('open', open);
+          box.style.height = open ? box.scrollHeight + 'px' : '0px';
+          box._settle = setTimeout(function () {
+            box.style.height = open ? 'auto' : '0px';
+          }, REDUCE ? 0 : 460);
+        };
+        /* 展开错开一点形成瀑布；收起全部同时动手 */
+        if (open) box._queued = setTimeout(step, Math.min(i, 14) * 28);
+        else step();
       });
+
       el.textContent = open ? '全部收起' : '全部展开';
+
+      /* 兜底：动画结束还留着开着的，直接整树重画，保证你看到的是收起的 */
+      clearTimeout(ui.foldGuard);
+      ui.foldGuard = setTimeout(function () {
+        if (!open && document.querySelector('.m.open')) { renderChrome(); renderView(); }
+        measureScroll(); paintScroll();
+      }, REDUCE ? 40 : 520);
       return;
     }
 

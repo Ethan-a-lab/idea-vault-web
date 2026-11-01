@@ -15,7 +15,7 @@
 window.CONTENT = {
   meta: {
     site: "学习台",
-    owner: "王爱民",
+    owner: "Ethan",
     tagline: "金融 · 外语 · AI",
     sub: "三条腿走路。缺一条，站不稳。",
     updated: "2026-10-31",
