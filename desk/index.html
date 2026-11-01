@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>学习台 · 金融 外语 AI</title>
-<meta name="description" content="个人学习管理页：金融、外语、AI 三条主线的内容索引与进度追踪。">
+<title>学习台 · 清单</title>
+<meta name="description" content="个人学习台：清单记学到哪一步，速记随手扔灵感，成果对外展示。">
 
 <!-- 装到桌面用：这三个 meta 决定安卓/iOS 打开时是否隐藏地址栏 -->
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#FAF8F3">
+<meta name="theme-color" content="#F7F4EE">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -16,62 +16,46 @@
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
 
-<link rel="stylesheet" href="assets/style.css">
 <link rel="stylesheet" href="../assets/shell.css">
+<link rel="stylesheet" href="assets/list.css">
 </head>
 <body data-page="desk">
 
-<header class="topbar">
-  <div class="wrap topbar-inner">
-    <a class="brand" href="#/">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span id="brand-name">学习台</span>
-    </a>
+<!-- 阅读进度：贴在站点顶栏下沿的一条细线 -->
+<div class="prog" id="prog" aria-hidden="true"></div>
 
-    <nav class="nav" aria-label="主导航">
-      <a href="#/" data-nav="home">清单</a>
-      <a href="#/notes" data-nav="notes">速记</a>
-      <a href="#/work" data-nav="work">成果</a>
-    </nav>
+<div class="wrap">
 
-    <div class="tools">
-      <div class="search">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M10.8 10.8L14 14"/></svg>
-        <input id="q" type="search" placeholder="搜索条目、备注…" autocomplete="off" aria-label="搜索">
-      </div>
-      <button id="btn-export" class="btn" title="把进度和草稿导出成 JSON，备份用">导出</button>
-      <button id="btn-import" class="btn" title="从导出的 JSON 恢复">导入</button>
-      <input id="file-import" type="file" accept="application/json" hidden>
+  <header>
+    <div class="kicker st" style="--i:0" id="kicker">学习台 · 自己定结构</div>
+    <div class="hero-row st" style="--i:1">
+      <h1 id="title">清单</h1>
+      <div class="hero-meta">最近修改<br><b id="updated">—</b></div>
     </div>
-  </div>
-</header>
+    <p class="sub st" style="--i:2" id="sub"></p>
+  </header>
 
-<main id="app" class="wrap" role="main"></main>
+  <nav class="tabs st" style="--i:3" id="tabs" aria-label="视图">
+    <a class="tab" href="#/list" data-view="list">清单</a>
+    <a class="tab" href="#/scratch" data-view="scratch">速记</a>
+    <a class="tab" href="#/works" data-view="works">成果</a>
+    <span class="tab-ind" id="tabInd" aria-hidden="true"></span>
+  </nav>
 
-<footer class="foot wrap">
-  <span id="foot-note">进度保存在本机浏览器，清缓存会丢，记得定期导出。</span>
-</footer>
+  <div class="stats st" style="--i:4" id="stats"></div>
 
-<!-- 手机上的底部导航；桌面端用顶部那一排，这个隐藏 -->
-<nav class="tabbar" aria-label="底部导航">
-  <a href="#/" data-tab="home">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-    <span>清单</span>
-  </a>
-  <a href="#/notes" data-tab="notes" class="tab-main">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-    <span>速记</span>
-  </a>
-  <a href="#/work" data-tab="work">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v13H4zM9 7V4h6v3"/></svg>
-    <span>成果</span>
-  </a>
-</nav>
+  <div class="toolbar st" style="--i:5" id="toolbar"></div>
 
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <main id="main"></main>
+
+  <div class="foot st" style="--i:6" id="foot"></div>
+</div>
+
+<input type="file" id="file" accept=".json,application/json" hidden>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script src="data/content.js"></script>
-<script src="assets/app.js"></script>
+<script src="assets/list.js"></script>
 <script src="../assets/shell.js"></script>
 </body>
 </html>

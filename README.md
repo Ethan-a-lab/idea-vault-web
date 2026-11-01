@@ -14,7 +14,7 @@
 | 板块 | 入口 | 是什么 | 数据在哪 |
 |---|---|---|---|
 | 首页 | `index.html` | 板块目录，一张卡一个板块 | 无 |
-| 学习台 | `desk/` | 清单勾进度、速记草稿、成果，可装成 PWA | 浏览器 `localStorage` |
+| 学习台 | `desk/` | 清单记掌握度、速记暂存、成果展示，可装成 PWA | 浏览器 `localStorage` |
 | 笔记库 | `notes.html` | 读私有仓库的 Markdown，三栏阅读器，**只读** | GitHub 私有库 `idea-vault` |
 
 **写入只有一条路**：本机 Obsidian 整理 → 手动推 GitHub。网页端没有任何写库的能力，
@@ -124,14 +124,22 @@ status: 待整理
 
 ## 学习台怎么用
 
-- **清单**：勾选打进度，数据存 `study.done.v1`
-- **速记**：随手记，纯本地、不发任何网络请求，存 `study.notes.v1`
-- **导出 .md**：攒够了点一下，生成 `速记-YYYY-MM-DD.md`（带 frontmatter，时间正序），拖进 Obsidian 就能整理
-- **归档**：搬走但不删，留个墓碑（`del:1`），归档区里能翻回来
-- **没有云同步**：这一页不连 GitHub、不需要令牌。跨设备就靠「导出 JSON / 导出 .md」搬运，
-  正本始终在 Obsidian 那边
+三块，共用一条顶栏，`#/list` `#/scratch` `#/works` 三个地址直接切：
 
-它的定位是**暂存箱**，不是唯一副本。整理完就清空，正式内容以 Obsidian 里的私有库为准。
+- **清单**（`study.v2`）：板块 → 章节 → 条目，结构自己定，没有预设内容。
+  条目右侧三个方块记掌握度：**未学 → 听过 → 会用 → 能讲**，再点同一格退一级。
+  每条可以填「判断标准」和笔记路径，填了路径右侧会出现「笔记 ↗」，直接跳到笔记库那篇。
+- **速记**（`study.notes.v1`）：随手扔的碎片，一句话也行。
+  「导出 .md」生成 `速记-YYYY-MM-DD.md`（带 frontmatter，时间正序），拖进 Obsidian 就能整理。
+  「归档」是搬走但不删，留个墓碑（`del:1`），归档区里能翻回来。
+- **成果**（`study.works.v1`）：对外展示的卡片，标题 / 类型 / 年份 / 说明 / 标签 / 链接，自己加自己改。
+  链接只放行 `http(s)`，写了 `javascript:` 会被丢掉。
+
+工具栏右侧的**备份 / 恢复**管三块数据：备份导出一个 JSON（清单 + 速记 + 成果），
+恢复时清单和成果整体覆盖、速记按 id 合并。也能读旧版的 `study-progress-*.json`（只取里面的速记）。
+
+**没有云同步**：这一页不连 GitHub、不需要令牌。跨设备就靠「备份 / 导出 .md」搬运，
+正本始终在 Obsidian 那边。定位是**暂存箱**，不是唯一副本——整理完就清空，正式内容以私有库为准。
 
 ---
 
@@ -151,9 +159,12 @@ notes/
   md.js             Markdown 渲染器（零依赖，含 frontmatter / 双链 / 表格）
   gh.js             GitHub API 只读 + IndexedDB 缓存
 desk/
-  index.html        学习台
-  assets/           它的 app.js / style.css / 图标（与站点图标同一套）
-  data/content.js   清单内容（手写在代码里）
+  index.html        学习台（清单 / 速记 / 成果三个视图）
+  assets/
+    list.js         学习台的逻辑：三个视图的渲染、存储、导入导出
+    list.css        学习台的样式（动效令牌在 :root）
+    icons/          图标（与站点图标同一套）
+  data/content.js   旧版清单内容，只在新页面里「导入旧版」时读
   sw.js             Service Worker（只缓存 desk/ 内文件）
 test/
   fixtures/         渲染器测试用的样本笔记（全部编造，不含真实笔记）
@@ -199,7 +210,8 @@ node test-md.js
 | 属性面板显示哪些字段 | `notes/app.js` | `LABELS` 对象 |
 | 命令面板的命令 | `notes/app.js` | `COMMANDS` 数组 |
 | 表格最小列宽 | `notes/md.js` | `parseTable` 里的 `header.length * 66` |
-| 学习台清单条目 | `desk/data/content.js` | `meta` 与条目数组 |
+| 学习台配色 / 动效时长 | `desk/assets/list.css` | 顶部 `:root` 变量 |
+| 学习台旧版清单内容 | `desk/data/content.js` | `meta` 与条目数组 |
 
 改完提交，GitHub Pages 一两分钟后自动更新。
 
@@ -233,7 +245,8 @@ node test-md.js
 3. **图片暂时不显示**。私有库的图片需要额外解码。正文里的网络图片（`https://...`）正常。
    也不建议把图片提交进私有库——它会让仓库体积一路上涨，笔记里放外链就够。
 4. **没有搜索索引**。全文搜索遍历内存里的笔记，几百篇以内很快，上千篇会变慢。
-5. **离线只有学习台**，而且 Service Worker 只缓存 `desk/` 内的文件——断网时外壳的顶栏会掉样式。
+5. **离线只有学习台**，而且 Service Worker 只缓存 `desk/` 内的文件加一份 `shell.css`——
+   断网时学习台本身照常用，顶栏也在，但点顶栏上的「首页 / 笔记」是打不开的。
 
 ---
 

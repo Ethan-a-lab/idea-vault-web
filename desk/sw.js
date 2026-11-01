@@ -6,19 +6,20 @@
  * 改了 index.html / app.js / content.js 之后，把 VERSION 加一，
  * 旧的缓存会被清掉。不改也不会出错，只是要等一次延迟生效。
  */
-const VERSION = "v5";
+const VERSION = "v6";
 const CACHE = "study-desk-" + VERSION;
 
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./assets/style.css",
-  "./assets/app.js",
+  "./assets/list.css",
+  "./assets/list.js",
   "./data/content.js",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
-  "./assets/icons/apple-touch-icon.png"
+  "./assets/icons/apple-touch-icon.png",
+  "../assets/shell.css"      // 顶栏样式，断网时也不该掉
 ];
 
 self.addEventListener("install", (e) => {
