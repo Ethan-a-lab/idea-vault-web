@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="学习台">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFD3A3"/>
+      <stop offset="0.55" stop-color="#9079A6"/>
+      <stop offset="1" stop-color="#443E75"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" rx="44" fill="url(#bg)"/>
+  <rect x="54" y="90" width="24" height="56" rx="12" fill="#7BEFC2"/>
+  <rect x="88" y="62" width="24" height="84" rx="12" fill="#FFE07A"/>
+  <rect x="122" y="80" width="24" height="66" rx="12" fill="#B9C6FF"/>
+</svg>

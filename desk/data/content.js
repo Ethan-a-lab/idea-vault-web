@@ -16,7 +16,7 @@ window.CONTENT = {
   meta: {
     site: "学习台",
     owner: "王爱民",
-    tagline: "金融 · 外语 · 计算机",
+    tagline: "金融 · 外语 · AI",
     sub: "三条腿走路。缺一条，站不稳。",
     updated: "2026-10-31",
     vault: "https://ethan-a-lab.github.io/idea-vault-web/",
@@ -126,10 +126,10 @@ window.CONTENT = {
 
     {
       id: "cs",
-      name: "计算机",
-      en: "Computer Science",
+      name: "AI",
+      en: "AI & Computing",
       color: "#3D4F8C",
-      desc: "数学打底、编程当手、AI 当杠杆。三样都不能只停在「知道」。",
+      desc: "数学打底、编程当手。不满足于会调接口，要知道它为什么有效。",
       modules: [
         {
           id: "math",
@@ -156,7 +156,7 @@ window.CONTENT = {
         },
         {
           id: "ai",
-          name: "AI 应用",
+          name: "大模型应用",
           goal: "能自己搭一个论文问答工具，而不是只会用聊天框。",
           status: "进行中",
           items: [
@@ -180,9 +180,9 @@ window.CONTENT = {
       title: "个人学习站（本站）",
       kind: "项目",
       year: "2026",
-      desc: "把金融、外语、计算机三条学习主线收敛到一个入口。前端纯静态托管在 Cloudflare Pages，私密数据后续接 Supabase。",
+      desc: "把金融、外语、AI 三条学习主线收敛到一个入口。前端是纯静态页，托管在 GitHub Pages，没有后端，数据全在本地和私有仓库里。",
       link: "",
-      tags: ["前端", "Cloudflare Pages"]
+      tags: ["前端", "GitHub Pages"]
     },
     {
       title: "计量经济学课程论文",

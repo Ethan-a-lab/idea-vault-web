@@ -6,7 +6,7 @@
  * 改了 index.html / app.js / content.js 之后，把 VERSION 加一，
  * 旧的缓存会被清掉。不改也不会出错，只是要等一次延迟生效。
  */
-const VERSION = "v3";
+const VERSION = "v4";
 const CACHE = "study-desk-" + VERSION;
 
 const ASSETS = [
