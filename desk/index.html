@@ -39,10 +39,6 @@
         <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M10.8 10.8L14 14"/></svg>
         <input id="q" type="search" placeholder="搜索条目、备注…" autocomplete="off" aria-label="搜索">
       </div>
-      <button id="btn-sync" class="syncbtn" title="跨设备同步（可选）。国内直连 GitHub 不稳，需要加速器，不配也能正常记录">
-        <span class="sync-dot" id="sync-dot"></span>
-        <span id="sync-text">本地</span>
-      </button>
       <button id="btn-export" class="btn" title="把进度和草稿导出成 JSON，备份用">导出</button>
       <button id="btn-import" class="btn" title="从导出的 JSON 恢复">导入</button>
       <input id="file-import" type="file" accept="application/json" hidden>
@@ -71,27 +67,6 @@
     <span>成果</span>
   </a>
 </nav>
-
-<div id="gh-panel" class="panel" hidden>
-  <div class="panel-box" role="dialog" aria-modal="true" aria-labelledby="gh-title">
-    <h2 id="gh-title">跨设备同步<span class="opt">可选</span></h2>
-    <p class="panel-hint">配了它，手机和电脑看到同一份速记。但国内直连 GitHub 不稳，<strong>得开着加速器才能用</strong>，所以默认不启用。<br>不配也完全能用：照常记录，攒够了「导出 .md」搬进 Obsidian 就行。</p>
-
-    <div class="field"><label for="gh-owner">用户名</label><input id="gh-owner" placeholder="Ethan-a-lab" autocomplete="off"></div>
-    <div class="field"><label for="gh-repo">仓库名</label><input id="gh-repo" placeholder="study-data" autocomplete="off"></div>
-    <div class="field"><label for="gh-branch">分支</label><input id="gh-branch" placeholder="main" autocomplete="off"></div>
-    <div class="field"><label for="gh-path">文件路径</label><input id="gh-path" placeholder="progress.json" autocomplete="off"></div>
-    <div class="field"><label for="gh-token">Token</label><input id="gh-token" type="password" placeholder="github_pat_..." autocomplete="off"></div>
-
-    <p class="panel-note"><strong>令牌别截图</strong>，它等于那个库的钥匙。令牌只存在这台设备的浏览器里，权限只勾 Contents: Read and write，只授权这一个仓库。</p>
-    <p class="panel-note">建议单独建一个空私有仓库存数据，<strong>别混进笔记库</strong>——否则你手动推笔记时会被这些机器提交挡下来。</p>
-
-    <div class="panel-actions">
-      <button class="btn" id="gh-cancel">取消</button>
-      <button class="btn-primary" id="gh-save">保存并测试</button>
-    </div>
-  </div>
-</div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 

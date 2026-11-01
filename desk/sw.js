@@ -6,7 +6,7 @@
  * 改了 index.html / app.js / content.js 之后，把 VERSION 加一，
  * 旧的缓存会被清掉。不改也不会出错，只是要等一次延迟生效。
  */
-const VERSION = "v4";
+const VERSION = "v5";
 const CACHE = "study-desk-" + VERSION;
 
 const ASSETS = [
@@ -40,7 +40,7 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
 
-  // 只接管自己站内的 GET；GitHub API 那些跨域请求一律放行，不进缓存
+  // 只接管自己站内的 GET；跨域请求一律放行，不进缓存
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;

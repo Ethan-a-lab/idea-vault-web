@@ -54,249 +54,6 @@
     }
   }
 
-  /* ---------- GitHub 同步 ---------- */
-  const GH_KEY = "study.gh.v1";
-  const GH_API = "https://api.github.com";
-  const gh = { owner: "", repo: "", branch: "main", path: "progress.json", token: "" };
-  let ghEnabled = false;
-  let pushTimer = null;
-  let pushing = false;
-  let pulling = false;
-
-  function loadGh() {
-    try {
-      const raw = localStorage.getItem(GH_KEY);
-      if (raw) Object.assign(gh, JSON.parse(raw));
-    } catch (e) { /* 配置坏了就按未配置处理 */ }
-    if (!gh.branch) gh.branch = "main";
-    if (!gh.path) gh.path = "progress.json";
-    ghEnabled = !!(gh.owner && gh.repo && gh.token);
-  }
-
-  function saveGh() {
-    try { localStorage.setItem(GH_KEY, JSON.stringify(gh)); } catch (e) { /* 忽略 */ }
-    ghEnabled = !!(gh.owner && gh.repo && gh.token);
-  }
-
-  function ghUrl(suffix) {
-    const base = "/repos/" + encodeURIComponent(gh.owner) + "/" + encodeURIComponent(gh.repo) + "/contents/";
-    const p = gh.path.replace(/^\/+/, "").split("/").map(encodeURIComponent).join("/");
-    return base + p + (suffix || "");
-  }
-
-  function utf8ToB64(str) {
-    const bytes = new TextEncoder().encode(str);
-    let bin = "";
-    const chunk = 0x8000;
-    for (let i = 0; i < bytes.length; i += chunk) {
-      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-    }
-    return btoa(bin);
-  }
-
-  function b64ToUtf8(b64) {
-    const clean = String(b64 || "").replace(/[\r\n\s]/g, "");
-    if (!clean) return "";
-    const bin = atob(clean);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return new TextDecoder("utf-8").decode(bytes);
-  }
-
-  async function ghFetch(path, opts, allow404) {
-    opts = opts || {};
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 20000);
-    let res;
-
-    try {
-      res = await fetch(GH_API + path, {
-        method: opts.method || "GET",
-        signal: ctrl.signal,
-        headers: {
-          Authorization: "Bearer " + gh.token,
-          Accept: "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28"
-        },
-        body: opts.body ? JSON.stringify(opts.body) : undefined
-      });
-    } catch (e) {
-      clearTimeout(timer);
-      throw new Error(e.name === "AbortError" ? "请求超时，网络可能不通" : "网络错误");
-    }
-    clearTimeout(timer);
-
-    const text = await res.text();
-    let body = null;
-    if (text) { try { body = JSON.parse(text); } catch (e) { body = null; } }
-
-    if (!res.ok) {
-      if (allow404 && res.status === 404) return null;
-      const msg = {
-        401: "令牌无效或已过期",
-        403: "没有权限，或触发了限流",
-        404: "仓库、分支或路径不对",
-        409: "云端文件已变动，稍后重试",
-        422: "内容非法或过大"
-      }[res.status] || ("GitHub 返回 " + res.status);
-      throw new Error(msg);
-    }
-    return body;
-  }
-
-  function setSync(state, text) {
-    const btn = document.getElementById("btn-sync");
-    const label = document.getElementById("sync-text");
-    if (!btn || !label) return;
-    btn.dataset.state = state || "";
-    label.textContent = text;
-    btn.title = ghEnabled
-      ? (gh.owner + "/" + gh.repo + " · " + gh.path + "（点击修改）")
-      : "点击连接 GitHub，把进度存到你自己的私有仓库";
-  }
-
-  function schedulePush() {
-    if (!ghEnabled || pulling) return;
-    setSync("pending", "待提交");
-    clearTimeout(pushTimer);
-    pushTimer = setTimeout(ghPush, 1800);
-  }
-
-  async function ghPull() {
-    if (!ghEnabled) { setSync("", "本地"); return; }
-    setSync("pending", "同步中");
-    pulling = true;
-    try {
-      const data = await ghFetch(ghUrl("?ref=" + encodeURIComponent(gh.branch)), {}, true);
-      if (!data) { setSync("ok", "已连接"); return; }
-
-      let obj = {};
-      try { obj = JSON.parse(b64ToUtf8(data.content) || "{}"); } catch (e) { obj = {}; }
-      const remote = Array.isArray(obj.done) ? obj.done : [];
-
-      let added = 0;
-      remote.forEach((k) => { if (!done.has(k)) { done.add(k); added++; } });
-
-      // 草稿也一起合并：以 id 去重，删除用墓碑标记（del:1），不会因为另一台设备还留着就复活
-      const noteAdded = Array.isArray(obj.notes) ? mergeNotes(obj.notes) : 0;
-
-      if (added) save();
-      if (noteAdded) saveNotes();
-
-      const nActive = notes.filter((n) => !n.del).length;
-      setSync("ok", done.size + " 进度 / " + nActive + " 草稿");
-      if (added || noteAdded) route();
-    } catch (e) {
-      setSync("error", "同步失败");
-      toast("同步失败：" + e.message);
-    } finally {
-      pulling = false;
-    }
-  }
-
-  async function ghPush() {
-    if (!ghEnabled || pushing) return;
-    pushing = true;
-    try {
-      const cur = await ghFetch(ghUrl("?ref=" + encodeURIComponent(gh.branch)), {}, true);
-      const payload = {
-        updated: new Date().toISOString(),
-        done: [...done],
-        notes: notes
-      };
-      const body = {
-        message: "学习台 " + done.size + " 进度 · " + notes.filter((n) => !n.del).length + " 草稿 " +
-          new Date().toISOString().slice(0, 16).replace("T", " "),
-        content: utf8ToB64(JSON.stringify(payload, null, 2)),
-        branch: gh.branch
-      };
-      if (cur && cur.sha) body.sha = cur.sha;
-
-      await ghFetch(ghUrl(""), { method: "PUT", body: body });
-      setSync("ok", done.size + " 进度 / " + notes.filter((n) => !n.del).length + " 草稿");
-    } catch (e) {
-      setSync("error", "提交失败");
-      toast("提交失败：" + e.message);
-    } finally {
-      pushing = false;
-    }
-  }
-
-  function initPanel() {
-    const panel = document.getElementById("gh-panel");
-    const btn = document.getElementById("btn-sync");
-    if (!panel || !btn) return;
-
-    const f = {
-      owner: document.getElementById("gh-owner"),
-      repo: document.getElementById("gh-repo"),
-      branch: document.getElementById("gh-branch"),
-      path: document.getElementById("gh-path"),
-      token: document.getElementById("gh-token")
-    };
-
-    btn.addEventListener("click", function () {
-      f.owner.value = gh.owner || "";
-      f.repo.value = gh.repo || "";
-      f.branch.value = gh.branch || "main";
-      f.path.value = gh.path || "progress.json";
-      f.token.value = gh.token || "";
-      panel.hidden = false;
-      f.owner.focus();
-    });
-
-    document.getElementById("gh-cancel").addEventListener("click", function () {
-      panel.hidden = true;
-    });
-
-    panel.addEventListener("click", function (e) {
-      if (e.target === panel) panel.hidden = true;
-    });
-
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && !panel.hidden) panel.hidden = true;
-    });
-
-    document.getElementById("gh-save").addEventListener("click", async function () {
-      const next = {
-        owner: f.owner.value.trim(),
-        repo: f.repo.value.trim(),
-        branch: f.branch.value.trim() || "main",
-        path: f.path.value.trim() || "progress.json",
-        token: f.token.value.trim()
-      };
-      if (!next.owner || !next.repo || !next.token) {
-        toast("用户名、仓库名、令牌都要填");
-        return;
-      }
-
-      const prev = Object.assign({}, gh);
-      Object.assign(gh, next);
-      saveGh();
-
-      const saveBtn = document.getElementById("gh-save");
-      saveBtn.disabled = true;
-      saveBtn.textContent = "测试中…";
-      setSync("pending", "测试中");
-
-      try {
-        await ghFetch("/repos/" + encodeURIComponent(gh.owner) + "/" + encodeURIComponent(gh.repo), {});
-        panel.hidden = true;
-        toast("连接成功，正在上传当前进度");
-        await ghPush();
-        await ghPull();
-      } catch (e) {
-        Object.assign(gh, prev);
-        saveGh();
-        setSync("error", "连接失败");
-        toast("连接失败：" + e.message);
-      } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = "保存并测试";
-      }
-    });
-  }
-
   const keyOf = (pid, mid, i) => pid + "|" + mid + "|" + i;
 
   /* ---------- 索引与统计 ---------- */
@@ -553,32 +310,11 @@
     }
     try {
       localStorage.setItem(NOTE_KEY, JSON.stringify(notes));
-      schedulePush();   // 有网就顺手推上去，手机记的才能在电脑上看到
       return true;
     } catch (e) {
       toast("保存失败，可能存储空间已满");
       return false;
     }
-  }
-
-  /* 合并远端草稿：按 id 去重，删除优先（墓碑），
-     ——否则 A 设备删掉的条目会被 B 设备的旧副本重新带回来 */
-  function mergeNotes(remoteArr) {
-    const byId = new Map();
-    notes.forEach((n) => { if (n && n.id) byId.set(n.id, n); });
-    let added = 0;
-    remoteArr.forEach((r) => {
-      if (!r || !r.id || typeof r.text !== "string") return;
-      const local = byId.get(r.id);
-      if (!local) {
-        notes.push({ id: r.id, text: r.text, ts: r.ts || Date.now(), del: r.del ? 1 : 0 });
-        added++;
-      } else if (r.del && !local.del) {
-        local.del = 1;
-        added++;
-      }
-    });
-    return added;
   }
 
   function pad2(n) { return n < 10 ? "0" + n : "" + n; }
@@ -708,9 +444,8 @@
       toast("已归档 " + live.length + " 条");
     });
 
-    document.getElementById("foot-note").textContent = ghEnabled
-      ? "已接同步：手机记的这里也能看到。整理完点「归档」移出待整理。"
-      : "只存在这台浏览器，清缓存会丢。攒够了点「导出 .md」搬进 Obsidian。";
+    document.getElementById("foot-note").textContent =
+      "只存在这台浏览器，清缓存会丢。攒够了点「导出 .md」搬进 Obsidian。";
   }
 
   function addNote() {
@@ -813,7 +548,6 @@
     if (input.checked) done.add(k); else done.delete(k);
     label.classList.toggle("is-done", input.checked);
     save();
-    schedulePush();
 
     const seg = location.hash.replace(/^#/, "").split("/").filter(Boolean);
     if (seg[0] === "p" && seg[2] === "m") {
@@ -834,7 +568,7 @@
     if (arch) {
       const target = notes.find((n) => n.id === arch.dataset.arch);
       if (!target) return;
-      // 不真删，只标记——否则另一台设备上的旧副本会在下次拉取时把它复活
+      // 不真删，打个 del 标记——归档里还能翻回来
       target.del = 1;
       saveNotes();
       renderNotes();
@@ -911,13 +645,8 @@
     reader.readAsText(f);
   });
 
-  loadGh();
-  initPanel();
-  if (!ghEnabled) setSync("", "本地");
-
   window.addEventListener("hashchange", route);
   route();
-  if (ghEnabled) ghPull();
 
   // 注册 Service Worker：装到主屏后能秒开、断网也能记。
   // 双击本地文件（file://）不支持 SW，这里直接跳过，不影响使用。
