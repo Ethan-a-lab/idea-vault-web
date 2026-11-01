@@ -6,7 +6,7 @@
  * 改了 index.html / app.js / content.js 之后，把 VERSION 加一，
  * 旧的缓存会被清掉。不改也不会出错，只是要等一次延迟生效。
  */
-const VERSION = "v7";
+const VERSION = "v8";
 const CACHE = "study-desk-" + VERSION;
 
 const ASSETS = [
@@ -15,6 +15,7 @@ const ASSETS = [
   "./manifest.webmanifest",
   "./assets/list.css",
   "./assets/list.js",
+  "./assets/install.js",
   "./data/content.js",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
