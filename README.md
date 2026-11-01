@@ -138,9 +138,11 @@ status: 待整理
 ```
 index.html          首页：板块目录
 notes.html          笔记库入口
+manifest.webmanifest 站点级 PWA 清单（名字 / 图标 / 配色）
 assets/
   shell.js          站级外壳：注入顶栏导航，板块清单在 NAV 数组
   shell.css         外壳样式（含深色适配）
+  icons/            站点图标：favicon.svg + 32/180/192/512/maskable 各尺寸
 notes/
   app.js            笔记库逻辑：路由、文件树、阅读、命令面板
   app.css           笔记库样式
@@ -148,7 +150,7 @@ notes/
   gh.js             GitHub API 只读 + IndexedDB 缓存
 desk/
   index.html        学习台
-  assets/           它的 app.js / style.css / 图标
+  assets/           它的 app.js / style.css / 图标（与站点图标同一套）
   data/content.js   清单内容（手写在代码里）
   sw.js             Service Worker（只缓存 desk/ 内文件）
 test/
@@ -156,6 +158,7 @@ test/
 test-md.js          渲染器回归测试（node test-md.js）
 tools/
   check-public-content.js   提交前检查：阻止真实笔记进入公开仓库
+  make-icons.py             重出图标全套（改颜色后跑一次）
 ```
 
 **为什么自己写 Markdown 解析器**：jsdelivr / unpkg 在国内经常连不上，一挂整个页面就白屏；
@@ -164,7 +167,7 @@ tools/
 ### 本地预览
 
 ```bash
-cd 网站前端          # 或仓库根目录
+cd D:\Github\idea-vault-web
 python -m http.server 8765
 # 浏览器打开 http://127.0.0.1:8765/
 ```
