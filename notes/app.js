@@ -1033,10 +1033,14 @@
       var b = e.target.closest('[data-act]');
       if (!b) return;
       var act = b.dataset.act;
-      document.querySelectorAll('#mobileBar button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      // 设置不是「视图」，点它不抢走当前高亮的那一格
+      if (act !== 'settings') {
+        document.querySelectorAll('#mobileBar button').forEach(function (x) { x.classList.toggle('on', x === b); });
+      }
       if (act === 'lib') openLibrary();
       if (act === 'tree') openDrawer('sidebar');
       if (act === 'outline') openDrawer('rightbar');
+      if (act === 'settings') { closeDrawers(); openSettings(); }
     });
 
     // 命令面板
@@ -1069,6 +1073,8 @@
         b.classList.add('on');
         S.theme = b.dataset.theme;
         applyTheme();
+        // 只换主题不该逼人点「保存并连接」（没填令牌也点不了），这里直接落盘
+        saveUI();
       };
     });
     document.querySelectorAll('#segBreak button').forEach(function (b) {

@@ -113,6 +113,23 @@ body[data-page="notes"] aside#sidebar { max-height: calc(100dvh - var(--shell-h)
   body.shell-open .shell-nav a { padding: 11px 12px; }
 }
 
+/* ---------- 窄屏：抽屉必须让开顶栏 ----------
+   笔记页的左右抽屉是 position:fixed; top:0，而本顶栏 z-index 50 压在它们上面，
+   抽屉头部（库名 / 同步 / 设置齿轮）正好落在顶栏那 46px 里，
+   结果就是「手机上根本没有设置图标」——点也点不到，命中的是顶栏。
+   抽屉改从顶栏下沿开始，头部才露得出来。 */
+@media (max-width: 900px) {
+  body[data-page="notes"] aside#sidebar,
+  body[data-page="notes"] aside#rightbar {
+    top: var(--shell-h);
+    max-height: none;
+  }
+  /* 底部工具栏也压着抽屉：给侧栏留出 58px，别让「未同步」那行被吃掉 */
+  body[data-page="notes"] aside#sidebar {
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* 笔记库是深色的，外壳跟着它走 */
 html[data-theme="dark"] .shell {
   background: rgba(30, 30, 30, .92);
